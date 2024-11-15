@@ -14,7 +14,8 @@
     "firebase": "^11.0.1",
     "lucide-react": "^0.456.0",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
