@@ -125,7 +125,7 @@ const Dashboard = () => {
           <h1 className="text-2xl font-semibold text-gray-800">PepTalk Journal</h1>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex-row sm:flex gap-6">
           {/* Emotional Calendar */}
           <div className="w-2/5 bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center justify-between mb-4">

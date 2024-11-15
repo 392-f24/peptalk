@@ -1,0 +1,1 @@
+// view / edit entry itself
