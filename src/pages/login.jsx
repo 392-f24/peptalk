@@ -13,23 +13,25 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
-      navigate("/profile");
-    }
+    // if (user) {
+    //   navigate("/profile");
+    // }
   }, [user, navigate]);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-white to-blue-100">
-      {/* <WorldMapBackground /> */}
-
       <div className="relative min-h-screen flex flex-col justify-center items-center p-4">
         <div className="max-w-lg w-full py-12 backdrop-blur-sm bg-white/70 rounded-2xl p-8 shadow-sm">
           <div className="flex flex-col text-center gap-2 mb-12">
             <h2 className="text-4xl font-extrabold text-gray-700">
-              Welcome to <span className="text-blue-500">W2D!</span>‍
+              Welcome to{" "}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-blue-500">
+                PepTalk!
+              </span>
             </h2>
+
             <h3 className="text-l text-gray-500">
-              Plan your next adventure 🚀
+              Please login to access your Journal
             </h3>
           </div>
 
