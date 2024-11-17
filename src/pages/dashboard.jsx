@@ -16,6 +16,8 @@ const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRecapModalOpen, setIsRecapModalOpen] = useState(false); // State for Recap Modal
+  const [isCreatingRecap, setIsCreatingRecap] = useState(false)
+  const [buttonText, setButtonText] = useState("Create Recap"); // Add state to manage button text
   const [newEntry, setNewEntry] = useState({
     name: "",
     date: "",
@@ -34,7 +36,6 @@ const Dashboard = () => {
   useEffect(() => {
     fetchEntries();
     fetchRecaps();
-    console.log(recaps[0])
   }, []);
 
   const handleSignOut = async () => {
@@ -79,6 +80,8 @@ const Dashboard = () => {
 
   const handleCreateRecap = async () => {
     try {
+      setIsCreatingRecap(true); 
+      setButtonText("Creating Recap...");
       const existingRecap = getRecapForSelectedMonth();
   
       if (existingRecap) {
@@ -95,18 +98,23 @@ const Dashboard = () => {
       await createRecap(selectedMonthEntries, currentDate);
   
       console.log("Recap created successfully!");
+  
+      // Show "Done!" for 1.5 seconds
+      setButtonText("Done!");
+      setTimeout(() => {
+        setButtonText("Create Recap");
+      }, 1500); // Reset after 1.5 seconds
     } catch (error) {
       console.error("Error creating recap:", error);
+      setButtonText("Create Recap"); // Reset to default in case of error
+    } finally {
+      setIsCreatingRecap(false);
     }
   };
   
   const selectedMonthRecap = getRecapForSelectedMonth();
   const handleViewRecap = () => {
-    if (selectedMonthRecap) {
       setIsRecapModalOpen(true);
-    } else {
-      console.log("No recap found for the selected month");
-    }
   };
   
 
@@ -261,9 +269,12 @@ const Dashboard = () => {
             {/* Create Recap Button */}
             <button
               onClick={handleCreateRecap}
-              className="w-full mt-4 px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+              disabled={isCreatingRecap}
+              className={`w-full mt-4 px-4 py-2 text-sm rounded transition ${
+                isCreatingRecap ? "bg-gray-400 text-gray-700" : "bg-blue-500 text-white hover:bg-blue-600"
+              }`}
             >
-              Create Recap
+              {buttonText}
             </button>
 
             {/* View Recap Button */}
@@ -358,50 +369,74 @@ const Dashboard = () => {
       </div>
 
       {/* Modal for Recap */}
-      {isRecapModalOpen && selectedMonthRecap && (
+      {isRecapModalOpen && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">{selectedMonthRecap.recapName}</h3>
-            
-            <p className="mb-2">
-              <strong>Month:</strong>{" "}
-              {new Date(selectedMonthRecap.month).toLocaleString("default", {
-                month: "long",
-                year: "numeric",
-                timeZone: "UTC", // Ensure the correct month is displayed
-              })}
-            </p>
+          <div className="bg-white rounded-lg p-6 w-96 shadow-lg relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setIsRecapModalOpen(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              title="Close"
+            >
+              ✖️
+            </button>
 
+            {selectedMonthRecap ? (
+              <>
+                <h3 className="text-lg font-semibold mb-4">{selectedMonthRecap.recapName}</h3>
 
-            <p className="mb-2">
-              <strong>Mood Summary:</strong> {JSON.stringify(selectedMonthRecap.moodSummary)}
-            </p>
+                <p className="mb-2">
+                  <strong>Month:</strong>{" "}
+                  {new Date(selectedMonthRecap.month).toLocaleString("default", {
+                    month: "long",
+                    year: "numeric",
+                    timeZone: "UTC", // Ensure the correct month is displayed
+                  })}
+                </p>
 
-            <p className="mb-2">
-              <strong>Total Entries:</strong> {selectedMonthRecap.totalEntries}
-            </p>
+                <p className="mb-2">
+                  <strong>Mood Summary:</strong> {JSON.stringify(selectedMonthRecap.moodSummary)}
+                </p>
 
-            <p className="mb-2">
-              <strong>Favorite Day:</strong>{" "}
-              {new Date(selectedMonthRecap.favoriteDay.date).toLocaleDateString()} -{" "}
-              {selectedMonthRecap.favoriteDay.description}
-            </p>
+                <p className="mb-2">
+                  <strong>Total Entries:</strong> {selectedMonthRecap.totalEntries}
+                </p>
 
-            <p className="mb-4">
-              <strong>Summary:</strong> {selectedMonthRecap.summary}
-            </p>
+                <p className="mb-2">
+                  <strong>Favorite Day:</strong>{" "}
+                  {new Date(selectedMonthRecap.favoriteDay.date).toLocaleDateString()} -{" "}
+                  {selectedMonthRecap.favoriteDay.description}
+                </p>
 
-            <div className="flex justify-end">
-              <button
-                onClick={() => setIsRecapModalOpen(false)}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-              >
-                Close
-              </button>
-            </div>
+                <p className="mb-4">
+                  <strong>Summary:</strong> {selectedMonthRecap.summary}
+                </p>
+
+                {/* Delete Recap Button */}
+                <button
+                  onClick={async () => {
+                    await deleteRecap(selectedMonthRecap._id);
+                    setIsRecapModalOpen(false); // Close the modal after deleting
+                  }}
+                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition w-full mb-4"
+                >
+                  Delete Recap
+                </button>
+              </>
+            ) : (
+              <div className="text-center">
+                <h3 className="text-lg font-semibold mb-4">No Recap Yet!</h3>
+                <p className="text-gray-700 mb-4">
+                  Looks like you haven’t created a recap for this month yet. Go ahead and create one to reflect on your month in a meaningful way!
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
+
+
+
 
 
       {isModalOpen && (
