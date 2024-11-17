@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Search, BookmarkPlus, BookmarkCheck, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import Entry from './pages/entry';
+import { Search, BookmarkPlus, BookmarkCheck, ChevronLeft, ChevronRight, X, Plus } from 'lucide-react';
 
 const sampleJournalEntries = [
   {
@@ -123,6 +125,12 @@ const Dashboard = () => {
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-800">PepTalk Journal</h1>
+          <Link 
+            to="/new-entry" 
+            className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={24} />
+          </Link>
         </div>
 
         <div className="flex-row sm:flex gap-6">
@@ -246,4 +254,15 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/new-entry" element={<Entry />} />
+      </Routes>
+    </Router>
+  );
+};
+
+export default App;
