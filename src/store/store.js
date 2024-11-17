@@ -18,6 +18,8 @@ const useStore = create((set, get) => ({
   login: async (handleGoogleLogin, navigate) => {
     try {
       const { googleUid, name } = await handleGoogleLogin(); 
+
+      console.log(import.meta.env.VITE_API_BASE_URL)
   
       const response = await axiosInstance.post('/auth/signup', { userId: googleUid, name })
   

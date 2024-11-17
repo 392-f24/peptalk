@@ -1,30 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { Search, ChevronLeft, ChevronRight, X, Plus } from "lucide-react";
-import useStore from "../store/store"; 
+import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import useStore from "../store/store";
 import { signOut } from "../utilities/firebase_helper";
-
-// Helper functions for calendar
-const getDaysInMonth = (date) => {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-};
-
-const getFirstDayOfMonth = (date) => {
-  return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-};
-
-const formatDate = (year, month, day) => {
-  return new Date(year, month, day).toISOString().split('T')[0];
-};
+import Calendar from "../components/calendar";
+import EntryCard from "../components/entryCard";
+import RecapModal from './recapModal';
 
 const emotions = ["😊", "😔", "😡", "😌", "🥰", "😤", "😢"];
 
 const Dashboard = () => {
-  const { name, entries = [], recaps = [], fetchEntries, createEntry, deleteEntry, fetchRecaps, createRecap, deleteRecap } = useStore();
+  const { 
+    name, 
+    entries, 
+    recaps, 
+    fetchEntries, 
+    createEntry, 
+    deleteEntry, 
+    fetchRecaps, 
+    createRecap, 
+    deleteRecap 
+  } = useStore();
+  
   const navigate = useNavigate();
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEmotion, setSelectedEmotion] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -68,7 +66,7 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     try {
-      await signOut(); 
+      await signOut();
       localStorage.removeItem("userId");
       useStore.getState().setUserId(null);
       navigate("/");
@@ -79,20 +77,47 @@ const Dashboard = () => {
 
   const handleCreateEntry = async () => {
     try {
-      await createEntry(newEntry.name, newEntry.date, newEntry.emoji, newEntry.summary, newEntry.transcript);
-      setIsModalOpen(false); 
+      await createEntry(
+        newEntry.name,
+        newEntry.date,
+        newEntry.emoji,
+        newEntry.summary,
+        newEntry.transcript
+      );
+      setIsModalOpen(false);
       setNewEntry({ name: "", date: "", emoji: "", summary: "", transcript: "" });
     } catch (error) {
       console.error("Error creating entry:", error);
     }
   };
 
-  const handleDelete = async (entryId) => {
+  const handleCreateRecap = async () => {
     try {
-      await deleteEntry(entryId); // Call deleteEntry from Zustand
-      console.log(`Entry with ID ${entryId} deleted successfully.`);
+      setIsCreatingRecap(true);
+      setButtonText("Creating Recap...");
+      
+      const existingRecap = getRecapForSelectedMonth();
+      if (existingRecap) {
+        await deleteRecap(existingRecap._id);
+      }
+
+      const selectedMonthEntries = entries.filter(
+        (entry) =>
+          new Date(entry.date).getMonth() === currentDate.getMonth() &&
+          new Date(entry.date).getFullYear() === currentDate.getFullYear()
+      );
+
+      await createRecap(selectedMonthEntries, currentDate);
+      
+      setButtonText("Done!");
+      setTimeout(() => {
+        setButtonText("Create Recap");
+      }, 1500);
     } catch (error) {
-      console.error("Error deleting entry:", error);
+      console.error("Error creating recap:", error);
+      setButtonText("Create Recap");
+    } finally {
+      setIsCreatingRecap(false);
     }
   };
 
@@ -106,165 +131,22 @@ const Dashboard = () => {
     });
   };
 
-  const handleCreateRecap = async () => {
-    try {
-      setIsCreatingRecap(true); 
-      setButtonText("Creating Recap...");
-      const existingRecap = getRecapForSelectedMonth();
-  
-      if (existingRecap) {
-        console.log("Deleting existing recap for the month:", existingRecap);
-        await deleteRecap(existingRecap._id);
-      }
-  
-      const selectedMonthEntries = entries.filter(
-        (entry) =>
-          new Date(entry.date).getMonth() === currentDate.getMonth() &&
-          new Date(entry.date).getFullYear() === currentDate.getFullYear()
-      );
-  
-      await createRecap(selectedMonthEntries, currentDate);
-  
-      console.log("Recap created successfully!");
-  
-      // Show "Done!" for 1.5 seconds
-      setButtonText("Done!");
-      setTimeout(() => {
-        setButtonText("Create Recap");
-      }, 1500); // Reset after 1.5 seconds
-    } catch (error) {
-      console.error("Error creating recap:", error);
-      setButtonText("Create Recap"); // Reset to default in case of error
-    } finally {
-      setIsCreatingRecap(false);
-    }
-  };
-  
-  const selectedMonthRecap = getRecapForSelectedMonth();
-  const handleViewRecap = () => {
-      setIsRecapModalOpen(true);
-  };
-  
-
-  const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-
-  const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-
-  const formatDate = (year, month, day) =>
-    `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
-  const generateCalendarDays = () => {
-    if (!Array.isArray(entries)) {
-      return [];
-    }
-    
-
-    const daysInMonth = getDaysInMonth(currentDate);
-    const firstDayOfMonth = getFirstDayOfMonth(currentDate);
-    const days = [];
-
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push(null);
-    }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = formatDate(
-        currentDate.getFullYear(),
-        currentDate.getMonth(),
-        day
-      );
-
-      const dayEntries = entries.filter((entry) => {
-        if (!entry || !entry.date) return false;
-        const entryDate = new Date(entry.date);
-        return (
-          entryDate.getDate() === day &&
-          entryDate.getMonth() === currentDate.getMonth() &&
-          entryDate.getFullYear() === currentDate.getFullYear()
-        );
-      });
-
-      const earliestEmoji = dayEntries.length > 0 ? dayEntries[0].emoji : null;
-
-      days.push({
-        day,
-        date,
-        emoji: earliestEmoji,
-      });
-    }
-
-    return days;
-  };
-  
-  
-  
-
-  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const calendarDays = generateCalendarDays();
-
-  const previousMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
-    );
-    setSelectedDate(null);
-  };
-
-  const nextMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
-    );
-    setSelectedDate(null);
-  };
-
-  const handleDayClick = (day) => {
-    if (!day) return;
-    setSelectedDate(
-      selectedDate === day.date ? null : day.date 
-    );
-  };
-  
-
-  const clearFilters = () => {
-    setSelectedDate(null);
-    setSearchTerm("");
-    setSelectedEmotion("");
-  };
-
   const filteredEntries = entries
-  .filter((entry) => {
-    const matchesSearch =
-      entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.summary.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesEmotion = selectedEmotion
-      ? entry.emoji === selectedEmotion
-      : true;
+    .filter((entry) => {
+      const matchesSearch =
+        entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.summary.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesEmotion = selectedEmotion
+        ? entry.emoji === selectedEmotion
+        : true;
+      const matchesDate = selectedDate
+        ? new Date(entry.date).toDateString() ===
+          new Date(selectedDate).toDateString()
+        : true;
 
-    const matchesDate = selectedDate
-      ? new Date(entry.date).toDateString() ===
-        new Date(selectedDate).toDateString()
-      : true;
-
-    return matchesSearch && matchesEmotion && matchesDate;
-  })
-  .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-red-600">Error: {error}</div>
-      </div>
-    );
-  }
-
-
+      return matchesSearch && matchesEmotion && matchesDate;
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -274,6 +156,7 @@ const Dashboard = () => {
       >
         Sign Out
       </button>
+      
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex justify-center">
           <h1 className="text-2xl font-semibold text-gray-800">
@@ -282,79 +165,19 @@ const Dashboard = () => {
         </div>
 
         <div className="flex-row sm:flex gap-6">
-          <div className="w-2/5 bg-white rounded-lg p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium text-gray-700">
-                Emotional Journey
-              </h2>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={previousMonth}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <span className="text-sm font-medium">
-                  {currentDate.toLocaleString("default", {
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </span>
-                <button
-                  onClick={nextMonth}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {weekDays.map((day) => (
-                <div
-                  key={day}
-                  className="text-center text-xs font-medium text-gray-500 mb-1"
-                >
-                  {day[0]}
-                </div>
-              ))}
-            {calendarDays.map((day, index) => (
-              <div
-                key={index}
-                onClick={() => day && handleDayClick(day)}
-                className={`aspect-square p-1 border rounded cursor-pointer ${
-                  day ? "hover:bg-gray-50" : ""
-                } ${
-                  day?.date === selectedDate ? "border-blue-500 bg-blue-50" : ""
-                }`}
-              >
-                {day && (
-                  <div className="h-full flex flex-col justify-between items-center">
-                    <div className="text-xs text-gray-600">{day.day}</div>
-                    <div className="mb-1">{day.emoji || ""}</div> 
-                  </div>
-                )}
-              </div>
-            ))}
-            </div>
-
-            {/* Create Recap Button */}
-            <button
-              onClick={handleCreateRecap}
-              disabled={isCreatingRecap}
-              className={`w-full mt-4 px-4 py-2 text-sm rounded transition ${
-                isCreatingRecap ? "bg-gray-400 text-gray-700" : "bg-blue-500 text-white hover:bg-blue-600"
-              }`}
-            >
-              {buttonText}
-            </button>
-
-            {/* View Recap Button */}
-            <button
-              onClick={handleViewRecap}
-              className="w-full mt-2 px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition"
-            >
-              View Recap
-            </button>
+          <div className="w-2/5">
+            <Calendar
+              currentDate={currentDate}
+              selectedDate={selectedDate}
+              entries={entries}
+              onPreviousMonth={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
+              onNextMonth={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
+              onDayClick={(day) => setSelectedDate(selectedDate === day.date ? null : day.date)}
+              onCreateRecap={handleCreateRecap}
+              onViewRecap={() => setIsRecapModalOpen(true)}
+              isCreatingRecap={isCreatingRecap}
+              buttonText={buttonText}
+            />
           </div>
 
           <div className="flex-1 space-y-4">
@@ -376,9 +199,7 @@ const Dashboard = () => {
                 {emotions.map((emoji) => (
                   <button
                     key={emoji}
-                    onClick={() =>
-                      setSelectedEmotion(selectedEmotion === emoji ? "" : emoji)
-                    }
+                    onClick={() => setSelectedEmotion(selectedEmotion === emoji ? "" : emoji)}
                     className={`text-xl p-1.5 rounded hover:bg-gray-100 ${
                       selectedEmotion === emoji ? "bg-gray-100" : ""
                     }`}
@@ -402,36 +223,11 @@ const Dashboard = () => {
                 </div>
               ) : (
                 filteredEntries.map((entry) => (
-                  <div
-                    key={entry._id}
-                    className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow relative"
-                  >
-                    {/* Delete Icon */}
-                    <button
-                      onClick={() => handleDelete(entry._id)}
-                      className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                      title="Delete Entry"
-                    >
-                      ✖️
-                    </button>
-
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-800 truncate">
-                          {entry.name}
-                        </h3>
-                        <div className="flex items-center gap-2 text-gray-500 text-sm">
-                          <span>
-                            {new Date(entry.date).toLocaleDateString()}
-                          </span>
-                          <span className="text-lg">{entry.emoji}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600 line-clamp-2 overflow-hidden text-ellipsis whitespace-nowrap">
-                      {entry.summary}
-                    </p>
-                  </div>
+                  <EntryCard 
+                    key={entry._id} 
+                    entry={entry} 
+                    onDelete={deleteEntry}
+                  />
                 ))
               )}
             </div>
@@ -441,74 +237,12 @@ const Dashboard = () => {
 
       {/* Modal for Recap */}
       {isRecapModalOpen && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg relative">
-            {/* Close Button */}
-            <button
-              onClick={() => setIsRecapModalOpen(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-              title="Close"
-            >
-              ✖️
-            </button>
-
-            {selectedMonthRecap ? (
-              <>
-                <h3 className="text-lg font-semibold mb-4">{selectedMonthRecap.recapName}</h3>
-
-                <p className="mb-2">
-                  <strong>Month:</strong>{" "}
-                  {new Date(selectedMonthRecap.month).toLocaleString("default", {
-                    month: "long",
-                    year: "numeric",
-                    timeZone: "UTC", // Ensure the correct month is displayed
-                  })}
-                </p>
-
-                <p className="mb-2">
-                  <strong>Mood Summary:</strong> {JSON.stringify(selectedMonthRecap.moodSummary)}
-                </p>
-
-                <p className="mb-2">
-                  <strong>Total Entries:</strong> {selectedMonthRecap.totalEntries}
-                </p>
-
-                <p className="mb-2">
-                  <strong>Favorite Day:</strong>{" "}
-                  {new Date(selectedMonthRecap.favoriteDay.date).toLocaleDateString()} -{" "}
-                  {selectedMonthRecap.favoriteDay.description}
-                </p>
-
-                <p className="mb-4">
-                  <strong>Summary:</strong> {selectedMonthRecap.summary}
-                </p>
-
-                {/* Delete Recap Button */}
-                <button
-                  onClick={async () => {
-                    await deleteRecap(selectedMonthRecap._id);
-                    setIsRecapModalOpen(false); // Close the modal after deleting
-                  }}
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition w-full mb-4"
-                >
-                  Delete Recap
-                </button>
-              </>
-            ) : (
-              <div className="text-center">
-                <h3 className="text-lg font-semibold mb-4">No Recap Yet!</h3>
-                <p className="text-gray-700 mb-4">
-                  Looks like you haven’t created a recap for this month yet. Go ahead and create one to reflect on your month in a meaningful way!
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-
-
-
+        <RecapModal 
+          isOpen={isRecapModalOpen}
+          onClose={() => setIsRecapModalOpen(false)}
+          selectedMonthRecap={getRecapForSelectedMonth()}
+          onDeleteRecap={deleteRecap}
+        />)}
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center">
