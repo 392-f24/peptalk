@@ -125,7 +125,9 @@ const useStore = create((set, get) => ({
       const userId = get().userId 
 
       //First do openAI call to generate the recap, then create (state+backend) with create-recap
+      console.log("Pressed button")
       const responseGenAI = await axiosInstance.post('/recap/generate-recap', { monthEntries, recapMonth })
+      console.log(responseGenAI)
       const { recapName, month, moodSummary, summary, favoriteDay, totalEntries } = responseGenAI.data.recap
       const responseCreate = await axiosInstance.post('/recap/create-recap', { userId, recapName, month, moodSummary, summary, favoriteDay, totalEntries })
       set((state) => {
