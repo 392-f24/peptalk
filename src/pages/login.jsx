@@ -7,34 +7,11 @@ const LoginPage = () => {
   const [user] = useAuthState();
   const navigate = useNavigate();
   const setUserId = useStore((state) => state.setUserId); 
+  const login = useStore((state) => state.login);
 
 
-  const handleLogin = async () => {
-  
-    try {
-      const { googleUid, name } = await handleGoogleLogin(); 
-      console.log("Logged in with Google:", googleUid, name);
-  
-      const response = await fetch("http://localhost:3007/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId: googleUid, name }),
-      });
-  
-      const data = await response.json();
-      if (response.ok) {
-        console.log("User successfully added to MongoDB:", data);
-        setUserId(googleUid); // SET THE USER ID STATE TO THE GOOGLE ID 
-        localStorage.setItem('userId', googleUid);
-        navigate("/dashboard")
-      } else {
-        console.error("Failed to add user to MongoDB:", data.message);
-      }
-    } catch (error) {
-      console.error("Error during login process:", error);
-    }
+  const Login = async () => {
+    await login(handleGoogleLogin, navigate);
   };
 
   return (
@@ -56,7 +33,7 @@ const LoginPage = () => {
 
           <div className="space-y-6">
               <button
-                onClick={handleLogin}
+                onClick={Login}
                 className="flex justify-center w-full items-center gap-2 px-4 py-2 sm:py-3 bg-white hover:bg-gray-50 text-gray-600 font-medium rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">

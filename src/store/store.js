@@ -3,11 +3,37 @@ import axiosInstance from "../utilities/axiosHelper";
 
 
 const useStore = create((set, get) => ({
+  //unique googleID (saved at login to this state + local storage)
   userId: null, 
+  setUserId: (id) => set({ userId: id }),
+
+  //Global state 
   entries: [], 
   recaps: [],
 
-  setUserId: (id) => set({ userId: id }),
+  //Put googleUid into mongoDB and then populates userId state, doesn't create new User in mongo if googleUID already exists
+
+  login: async (handleGoogleLogin, navigate) => {
+    try {
+      const { googleUid, name } = await handleGoogleLogin(); 
+  
+      const response = await axiosInstance.post('/auth/signup', { userId: googleUid, name })
+  
+      if (response.status === 200) { 
+        set({ userId: googleUid })
+        localStorage.setItem('userId', googleUid)
+        navigate("/dashboard")
+      } else {
+        console.error("Failed to add user to MongoDB:", response.data.message);
+      }
+    } catch (error) {
+      console.error("Error during login process:", error.response?.data || error.message); // Improved error handling
+    }
+  },
+  
+
+
+  //fetchAll, create, update, delete for entries state
 
   fetchEntries: async () => {
     try {
@@ -62,6 +88,17 @@ const useStore = create((set, get) => ({
         })
     } catch (error) {
         console.error('Error deleting entry:', error.response?.data || error.message);
+    }
+  }, 
+
+  //fetchAll, create, delete for recaps state 
+
+  fetchRecaps: async () => {
+    try {
+        const userId = get().userId 
+        const response = await axiosInstance.get('/recap/recap-data')
+    } catch (error) {
+        console.error('Error fetching recaps:', error.response?.data || error.message);
     }
   }
 
