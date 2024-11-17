@@ -111,3 +111,11 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/react,firebase,visualstudiocode,macos,windows
+
+
+firebase.js
+
+server/.env
+
+# Root-level .env file
+.env
