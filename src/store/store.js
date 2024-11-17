@@ -118,6 +118,22 @@ const useStore = create((set, get) => ({
     } catch (error) {
       console.error('Error deleting recap:', error.response?.data || error.message);
     }
+  },
+
+  createRecap: async (monthEntries, recapMonth) => {
+    try {
+      const userId = get().userId 
+
+      //First do openAI call to generate the recap, then create (state+backend) with create-recap
+      const responseGenAI = await axiosInstance.post('/recap/generate-recap', { monthEntries, recapMonth })
+      const { recapName, month, moodSummary, summary, favoriteDay, totalEntries } = responseGenAI.data.recap
+      const responseCreate = await axiosInstance.post('/recap/create-recap', { userId, recapName, month, moodSummary, summary, favoriteDay, totalEntries })
+      set((state) => {
+        return { recaps: [...state.recaps, responseCreate.data.newRecap] }
+      })
+    } catch (error) {
+      console.error('Error creating recap:', error.response?.data || error.message);
+    }
   }
 
 

@@ -19,8 +19,6 @@ export const createRecap = async (req, res) => {
     const {
         recapName,
         month,
-        highs,
-        lows,
         moodSummary,
         summary,
         favoriteDay,
@@ -32,8 +30,6 @@ export const createRecap = async (req, res) => {
             userId: userId,
             recapName: recapName,
             month: month,
-            highs: highs,
-            lows: lows,
             moodSummary: moodSummary,
             summary: summary,
             favoriteDay: favoriteDay,
@@ -68,7 +64,7 @@ export const generateRecap = async (req, res) => {
       return res.status(500).json({ success: false, message: 'OpenAI API key not configured' });
     }
   
-    const { monthEntries, month } = req.body;
+    const { monthEntries, recapMonth } = req.body;
   
     try {
       const response = await axios.post(
@@ -83,7 +79,7 @@ export const generateRecap = async (req, res) => {
   Here is the array of journal entry objects:
   ${JSON.stringify(monthEntries)}
   
-  This array contains journal entries for the month of ${month}. Your task is to create a monthly recap in the context of an emotional journal app. 
+  This array contains journal entries for the month of ${recapMonth}. Your task is to create a monthly recap in the context of an emotional journal app. 
   
   ### Instructions:
   1. **ONLY** return the JSON object. Do not include any additional text, explanations, or comments. 
@@ -91,13 +87,7 @@ export const generateRecap = async (req, res) => {
      {
         "recapName": "string",
         "month": "Date",
-        "highs": [
-            { "title": "string", "description": "string" }
-        ],
-        "lows": [
-            { "title": "string", "description": "string" }
-        ],
-        "moodSummary": { "😊": number, "😔": number },
+        "moodSummary": { "😊": number, "😔": number }, //<-Example, give me the ACTUAL emoji count of the input
         "summary": "string",
         "favoriteDay": { "date": "Date", "description": "string" },
         "totalEntries": number
@@ -109,15 +99,9 @@ export const generateRecap = async (req, res) => {
   {
     "recapName": "Your Monthly Reflection",
     "month": "2024-11-01T00:00:00.000Z",
-    "highs": [
-        { "title": "Great Morning Walk", "description": "A peaceful walk with family." }
-    ],
-    "lows": [
-        { "title": "Stressful Deadline", "description": "Intense project submission." }
-    ],
-    "moodSummary": { "😊": 5, "😔": 2 },
-    "summary": "November was a mix of joyful and challenging moments.",
-    "favoriteDay": { "date": "2024-11-05T00:00:00.000Z", "description": "Had a fun outing." },
+    "moodSummary": { "😊": 5, "😔": 2, "🤣": 3 },
+    "summary": "...", (this should be the bulk of the text)
+    "favoriteDay": { "date": "2024-11-05T00:00:00.000Z", "description": "..." },
     "totalEntries": 10
   }
   
