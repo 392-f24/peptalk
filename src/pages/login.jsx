@@ -13,6 +13,12 @@ const LoginPage = () => {
     await login(handleGoogleLogin, navigate);
   };
 
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-white to-blue-100">
       <div className="relative min-h-screen flex flex-col justify-center items-center p-4">

@@ -4,20 +4,35 @@ import useStore from "../store/store";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "../utilities/firebase_helper";
 
+// Helper functions for calendar
+const getDaysInMonth = (date) => {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+};
+
+const getFirstDayOfMonth = (date) => {
+  return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+};
+
+const formatDate = (year, month, day) => {
+  return new Date(year, month, day).toISOString().split('T')[0];
+};
+
 const emotions = ["😊", "😔", "😡", "😌", "🥰", "😤", "😢"];
 
 const Dashboard = () => {
-  const { name, entries, recaps, fetchEntries, createEntry, deleteEntry, fetchRecaps, createRecap, deleteRecap } = useStore();
+  const { name, entries = [], recaps = [], fetchEntries, createEntry, deleteEntry, fetchRecaps, createRecap, deleteRecap } = useStore();
   const navigate = useNavigate();
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEmotion, setSelectedEmotion] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isRecapModalOpen, setIsRecapModalOpen] = useState(false); 
-  const [isCreatingRecap, setIsCreatingRecap] = useState(false)
-  const [buttonText, setButtonText] = useState("Create Recap"); 
+  const [isRecapModalOpen, setIsRecapModalOpen] = useState(false);
+  const [isCreatingRecap, setIsCreatingRecap] = useState(false);
+  const [buttonText, setButtonText] = useState("Create Recap");
   const [newEntry, setNewEntry] = useState({
     name: "",
     date: "",
@@ -28,19 +43,28 @@ const Dashboard = () => {
 
   useEffect(() => {
     const savedUserId = localStorage.getItem("userId");
-    const savedName = localStorage.getItem("name")
+    const savedName = localStorage.getItem("name");
     if (savedUserId) {
-      useStore.getState().setUserId(savedUserId); 
+      useStore.getState().setUserId(savedUserId);
     }
     if (savedName) {
-      useStore.getState().setName(savedName)
+      useStore.getState().setName(savedName);
     }
   }, []);
 
   useEffect(() => {
-    fetchEntries();
-    fetchRecaps();
-  }, []);
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([fetchEntries(), fetchRecaps()]);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [fetchEntries, fetchRecaps]);
 
   const handleSignOut = async () => {
     try {
@@ -130,22 +154,28 @@ const Dashboard = () => {
     `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
   const generateCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentDate); 
-    const firstDayOfMonth = getFirstDayOfMonth(currentDate); 
+    if (!Array.isArray(entries)) {
+      return [];
+    }
+    
+
+    const daysInMonth = getDaysInMonth(currentDate);
+    const firstDayOfMonth = getFirstDayOfMonth(currentDate);
     const days = [];
-  
+
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(null);
     }
-  
+
     for (let day = 1; day <= daysInMonth; day++) {
       const date = formatDate(
         currentDate.getFullYear(),
         currentDate.getMonth(),
         day
       );
-  
+
       const dayEntries = entries.filter((entry) => {
+        if (!entry || !entry.date) return false;
         const entryDate = new Date(entry.date);
         return (
           entryDate.getDate() === day &&
@@ -153,19 +183,18 @@ const Dashboard = () => {
           entryDate.getFullYear() === currentDate.getFullYear()
         );
       });
-  
+
       const earliestEmoji = dayEntries.length > 0 ? dayEntries[0].emoji : null;
-  
+
       days.push({
         day,
         date,
         emoji: earliestEmoji,
       });
     }
-  
+
     return days;
   };
-  
   
   
   
@@ -218,6 +247,22 @@ const Dashboard = () => {
     return matchesSearch && matchesEmotion && matchesDate;
   })
   .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-red-600">Error: {error}</div>
+      </div>
+    );
+  }
 
 
 
