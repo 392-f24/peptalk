@@ -1,22 +1,41 @@
-// login with google / peptalk landing
 import React, { useEffect } from "react";
-import {
-  signInWithGoogle,
-  signOut,
-  useAuthState,
-} from "../utilities/firebase_helper";
+import { handleGoogleLogin, signOut, useAuthState } from "../utilities/firebase_helper";
 import { useNavigate } from "react-router-dom";
+import useStore from "../store/store";
 
 const LoginPage = () => {
   const [user] = useAuthState();
-
   const navigate = useNavigate();
+  const setUserId = useStore((state) => state.setUserId); 
 
-  useEffect(() => {
-    // if (user) {
-    //   navigate("/profile");
-    // }
-  }, [user, navigate]);
+
+  const handleLogin = async () => {
+  
+    try {
+      const { googleUid, name } = await handleGoogleLogin(); 
+      console.log("Logged in with Google:", googleUid, name);
+  
+      const response = await fetch("http://localhost:3007/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: googleUid, name }),
+      });
+  
+      const data = await response.json();
+      if (response.ok) {
+        console.log("User successfully added to MongoDB:", data);
+        setUserId(googleUid); // SET THE USER ID STATE TO THE GOOGLE ID 
+        localStorage.setItem('userId', googleUid);
+        navigate("/dashboard")
+      } else {
+        console.error("Failed to add user to MongoDB:", data.message);
+      }
+    } catch (error) {
+      console.error("Error during login process:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-white to-blue-100">
@@ -36,28 +55,8 @@ const LoginPage = () => {
           </div>
 
           <div className="space-y-6">
-            {user ? (
-              <div className="space-y-6">
-                <div className="text-center space-y-2">
-                  <div className="text-xl text-gray-800">
-                    Welcome, {user.displayName}
-                  </div>
-                  <div className="text-sm text-gray-600">{user.email}</div>
-                </div>
-
-                <button
-                  onClick={signOut}
-                  className="w-full bg-red-500 text-white rounded-lg py-3 px-4 
-                             hover:bg-red-600 transform hover:scale-[1.02] 
-                             transition-all duration-200 shadow-md
-                             flex items-center justify-center space-x-2"
-                >
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            ) : (
               <button
-                onClick={signInWithGoogle}
+                onClick={handleLogin}
                 className="flex justify-center w-full items-center gap-2 px-4 py-2 sm:py-3 bg-white hover:bg-gray-50 text-gray-600 font-medium rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -80,7 +79,6 @@ const LoginPage = () => {
                 </svg>
                 <span className="font-medium">Sign in with Google</span>
               </button>
-            )}
           </div>
         </div>
       </div>

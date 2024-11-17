@@ -1,7 +1,8 @@
 import Entry from "../models/Entry.js";
 
 export const entryData = async (req, res) => {
-    const userId = req.body.userId
+    const userId = req.query.userId
+    console.log(userId)
     try {
         const entries = await Entry.find({userId: userId})
         if (entries.length===0) {
@@ -14,10 +15,10 @@ export const entryData = async (req, res) => {
 }
 
 export const createEntry = async (req, res) => {
-    const { name, date, emoji, description, audio } = req.body 
+    const { name, date, emoji, summary, transcript } = req.body 
     const userId = req.body.userId
     try {
-        const newEntry = await Entry.create({ userId: userId, date: date, name: name, description: description, emoji: emoji, audio: audio})
+        const newEntry = await Entry.create({ userId: userId, date: date, name: name, transcript: transcript, emoji: emoji, summary: summary})
         return res.status(201).json({success: true, newEntry})
     } catch (error) {
         return res.status(500).json({success: false, message: error.message})
@@ -26,17 +27,13 @@ export const createEntry = async (req, res) => {
 
 export const updateEntry = async (req, res) => {
     const userId = req.body.userId
-    const { entryId, updatedName, updatedDate, updatedEmoji, updatedDescription, updatedAudio } = req.body 
+    const { entryId, updatedSummary } = req.body 
     try {
         const entry = await Entry.findOne({_id: entryId, userId: userId})
         if (!entry) {
             return res.status(404).json({success: false, message: "No entry found"})
         }
-        if (updatedName !== undefined) entry.name = updatedName
-        if (updatedDate !== undefined) entry.date = updatedDate
-        if (updatedEmoji !== undefined) entry.emoji = updatedEmoji
-        if (updatedDescription !== undefined) entry.description = updatedDescription
-        if (updatedAudio !== undefined) entry.audio = updatedAudio
+        if (updatedSummary !== undefined) entry.summary = updatedSummary
         await entry.save() 
         return res.status(200).json({success: true, message: "Entry updated succesfully"})
 
@@ -46,8 +43,8 @@ export const updateEntry = async (req, res) => {
 }
 
 export const deleteEntry = async (req, res) => {
-    const userId = req.body.userId
-    const { entryId } = req.body 
+    const userId = req.query.userId; 
+    const entryId = req.query.entryId; 
     try {
         const entry = await Entry.findOneAndDelete({_id: entryId, userId: userId})
         if (!entry) {

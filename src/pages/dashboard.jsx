@@ -1,52 +1,72 @@
-// home dashboard to view all entries and calendar
-import React, { useState } from "react";
-import {
-  Search,
-  BookmarkPlus,
-  BookmarkCheck,
-  ChevronLeft,
-  ChevronRight,
-  X,
-} from "lucide-react";
-
-const sampleJournalEntries = [
-  {
-    id: 1,
-    title: "Morning Reflection",
-    date: "2024-11-11",
-    content:
-      "Today started with a peaceful meditation session. I felt centered and ready to take on the day's challenges. The morning sunshine through my window really lifted my spirits.",
-    emotion: "😊",
-    bookmarked: false,
-  },
-  {
-    id: 2,
-    title: "Challenging Afternoon",
-    date: "2024-11-10",
-    content:
-      "Work was particularly stressful today. Had a difficult meeting but managed to stay composed. Learning to handle pressure better but still feeling the weight of responsibilities.",
-    emotion: "😔",
-    bookmarked: true,
-  },
-  {
-    id: 3,
-    title: "Evening Breakthrough",
-    date: "2024-11-08",
-    content:
-      "Finally solved that coding problem I've been stuck on for days! The satisfaction of figuring it out made my whole week better.",
-    emotion: "🥰",
-    bookmarked: false,
-  },
-];
+import React, { useEffect, useState } from "react";
+import { Search, ChevronLeft, ChevronRight, X, Plus } from "lucide-react";
+import useStore from "../store/store"; 
+import { useNavigate } from "react-router-dom";
+import { signOut } from "../utilities/firebase_helper";
 
 const emotions = ["😊", "😔", "😡", "😌", "🥰", "😤", "😢"];
 
 const Dashboard = () => {
-  const [entries, setEntries] = useState(sampleJournalEntries);
+  const entries = useStore((state) => state.entries); 
+  const fetchEntries = useStore((state) => state.fetchEntries); 
+  const createEntry = useStore((state) => state.createEntry)
+  const deleteEntry = useStore((state) => state.deleteEntry)
+  const navigate = useNavigate();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEmotion, setSelectedEmotion] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newEntry, setNewEntry] = useState({
+    name: "",
+    date: "",
+    emoji: "",
+    summary: "",
+    transcript: "",
+  });
+
+  useEffect(() => {
+    const savedUserId = localStorage.getItem("userId");
+    if (savedUserId) {
+      useStore.getState().setUserId(savedUserId); 
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEntries();
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(); 
+      localStorage.removeItem("userId");
+      useStore.getState().setUserId(null);
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  const handleCreateEntry = async () => {
+    try {
+      await createEntry(newEntry.name, newEntry.date, newEntry.emoji, newEntry.summary, newEntry.transcript)
+      setIsModalOpen(false); 
+      setNewEntry({ name: "", date: "", emoji: "", summary: "", transcript: "" });
+    } catch (error) {
+      console.error("Error creating entry:", error);
+    }
+  };
+
+  const handleDelete = async (entryId) => {
+    try {
+      await deleteEntry(entryId); // Call deleteEntry from Zustand
+      console.log(`Entry with ID ${entryId} deleted successfully.`);
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+    }
+  };
+  
 
   const getDaysInMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -78,11 +98,7 @@ const Dashboard = () => {
         day
       );
       const entry = entries.find((e) => e.date === date);
-      days.push({
-        day,
-        date,
-        entry,
-      });
+      days.push({ day, date, entry });
     }
 
     return days;
@@ -121,10 +137,10 @@ const Dashboard = () => {
   const filteredEntries = entries
     .filter((entry) => {
       const matchesSearch =
-        entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.content.toLowerCase().includes(searchTerm.toLowerCase());
+        entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.summary.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesEmotion = selectedEmotion
-        ? entry.emotion === selectedEmotion
+        ? entry.emoji === selectedEmotion
         : true;
       const matchesDate = selectedDate ? entry.date === selectedDate : true;
 
@@ -132,16 +148,14 @@ const Dashboard = () => {
     })
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  const toggleBookmark = (id) => {
-    setEntries(
-      entries.map((entry) =>
-        entry.id === id ? { ...entry, bookmarked: !entry.bookmarked } : entry
-      )
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      <button
+        onClick={handleSignOut}
+        className="absolute top-4 right-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+      >
+        Sign Out
+      </button>
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-800">
@@ -150,7 +164,6 @@ const Dashboard = () => {
         </div>
 
         <div className="flex-row sm:flex gap-6">
-          {/* Emotional Calendar */}
           <div className="w-2/5 bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-medium text-gray-700">
@@ -190,19 +203,19 @@ const Dashboard = () => {
                 <div
                   key={index}
                   onClick={() => day && handleDayClick(day)}
-                  className={`aspect-square p-1 border rounded cursor-pointer 
-                    ${day ? "hover:bg-gray-50" : ""}
-                    ${
-                      day?.date === selectedDate
-                        ? "border-blue-500 bg-blue-50"
-                        : ""
-                    }`}
+                  className={`aspect-square p-1 border rounded cursor-pointer ${
+                    day ? "hover:bg-gray-50" : ""
+                  } ${
+                    day?.date === selectedDate
+                      ? "border-blue-500 bg-blue-50"
+                      : ""
+                  }`}
                 >
                   {day && (
                     <div className="h-full flex flex-col justify-between">
                       <div className="text-xs text-gray-600">{day.day}</div>
                       <div className="text-base flex justify-center">
-                        {day.entry?.emotion || ""}
+                        {day.entry?.emoji || ""}
                       </div>
                     </div>
                   )}
@@ -211,7 +224,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Search and Entries Section */}
           <div className="flex-1 space-y-4">
             <div className="flex gap-3 items-center">
               <div className="relative flex-1">
@@ -242,62 +254,119 @@ const Dashboard = () => {
                   </button>
                 ))}
               </div>
-              {(selectedDate || searchTerm || selectedEmotion) && (
-                <button
-                  onClick={clearFilters}
-                  className="p-1.5 text-gray-500 hover:bg-gray-100 rounded"
-                  title="Clear all filters"
-                >
-                  <X size={16} />
-                </button>
-              )}
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition ml-3"
+              >
+                + Create Entry
+              </button>
             </div>
 
-            {/* Journal Entries */}
-            <div className="space-y-3">
-              {filteredEntries.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  No entries found for the selected filters
-                </div>
-              ) : (
-                filteredEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-800">
-                          {entry.title}
-                        </h3>
-                        <div className="flex items-center gap-2 text-gray-500 text-sm">
-                          <span>
-                            {new Date(entry.date).toLocaleDateString()}
-                          </span>
-                          <span className="text-lg">{entry.emotion}</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => toggleBookmark(entry.id)}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        {entry.bookmarked ? (
-                          <BookmarkCheck size={16} />
-                        ) : (
-                          <BookmarkPlus size={16} />
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-sm text-gray-600 line-clamp-2">
-                      {entry.content}
-                    </p>
-                  </div>
-                ))
-              )}
+            <div className="space-y-3 h-[510px] overflow-y-auto">
+  {filteredEntries.length === 0 ? (
+    <div className="text-center py-8 text-gray-500">
+      No entries found for the selected filters
+    </div>
+  ) : (
+    filteredEntries.map((entry) => (
+      <div
+        key={entry._id}
+        className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow relative"
+      >
+        {/* Delete Icon */}
+        <button
+          onClick={() => handleDelete(entry._id)}
+          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+          title="Delete Entry"
+        >
+          ✖️
+        </button>
+
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <h3 className="text-lg font-medium text-gray-800 truncate">
+              {entry.name}
+            </h3>
+            <div className="flex items-center gap-2 text-gray-500 text-sm">
+              <span>{new Date(entry.date).toLocaleDateString()}</span>
+              <span className="text-lg">{entry.emoji}</span>
             </div>
           </div>
         </div>
+        <p className="text-sm text-gray-600 line-clamp-2 overflow-hidden text-ellipsis whitespace-nowrap">
+          {entry.summary}
+        </p>
       </div>
+    ))
+  )}
+</div>
+
+          </div>
+        </div>
+      </div>
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+            <h3 className="text-lg font-medium mb-4">Create New Entry</h3>
+            <input
+              type="text"
+              placeholder="Name"
+              className="w-full mb-2 p-2 border rounded"
+              value={newEntry.name}
+              onChange={(e) =>
+                setNewEntry({ ...newEntry, name: e.target.value })
+              }
+            />
+            <input
+              type="date"
+              className="w-full mb-2 p-2 border rounded"
+              value={newEntry.date}
+              onChange={(e) =>
+                setNewEntry({ ...newEntry, date: e.target.value })
+              }
+            />
+            <input
+              type="text"
+              placeholder="Emoji"
+              className="w-full mb-2 p-2 border rounded"
+              value={newEntry.emoji}
+              onChange={(e) =>
+                setNewEntry({ ...newEntry, emoji: e.target.value })
+              }
+            />
+            <textarea
+              placeholder="Summary"
+              className="w-full mb-2 p-2 border rounded"
+              value={newEntry.summary}
+              onChange={(e) =>
+                setNewEntry({ ...newEntry, summary: e.target.value })
+              }
+            />
+            <textarea
+              placeholder="Transcript"
+              className="w-full mb-2 p-2 border rounded"
+              value={newEntry.transcript}
+              onChange={(e) =>
+                setNewEntry({ ...newEntry, transcript: e.target.value })
+              }
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateEntry}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

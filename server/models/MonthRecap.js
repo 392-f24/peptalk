@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const monthRecapSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: String, required: true },
     recapName: { type: String, required: true },
     month: { type: Date, required: true },
     highs: [

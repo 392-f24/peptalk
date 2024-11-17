@@ -116,3 +116,6 @@ $RECYCLE.BIN/
 firebase.js
 
 server/.env
+
+# Root-level .env file
+.env
