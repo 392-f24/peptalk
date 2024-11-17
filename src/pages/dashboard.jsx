@@ -15,9 +15,9 @@ const Dashboard = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isRecapModalOpen, setIsRecapModalOpen] = useState(false); // State for Recap Modal
+  const [isRecapModalOpen, setIsRecapModalOpen] = useState(false); 
   const [isCreatingRecap, setIsCreatingRecap] = useState(false)
-  const [buttonText, setButtonText] = useState("Create Recap"); // Add state to manage button text
+  const [buttonText, setButtonText] = useState("Create Recap"); 
   const [newEntry, setNewEntry] = useState({
     name: "",
     date: "",
@@ -166,10 +166,11 @@ const Dashboard = () => {
 
   const handleDayClick = (day) => {
     if (!day) return;
-    setSelectedDate(selectedDate === day.date ? null : day.date);
-    setSearchTerm("");
-    setSelectedEmotion("");
+    setSelectedDate(
+      selectedDate === day.date ? null : day.date // Ensure it's in YYYY-MM-DD format
+    );
   };
+  
 
   const clearFilters = () => {
     setSelectedDate(null);
@@ -178,18 +179,23 @@ const Dashboard = () => {
   };
 
   const filteredEntries = entries
-    .filter((entry) => {
-      const matchesSearch =
-        entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.summary.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesEmotion = selectedEmotion
-        ? entry.emoji === selectedEmotion
-        : true;
-      const matchesDate = selectedDate ? entry.date === selectedDate : true;
+  .filter((entry) => {
+    const matchesSearch =
+      entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.summary.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesEmotion = selectedEmotion
+      ? entry.emoji === selectedEmotion
+      : true;
+    const matchesDate = selectedDate
+      ? new Date(entry.date).toISOString().split("T")[0] ===
+        new Date(selectedDate).toISOString().split("T")[0]
+      : true;
 
-      return matchesSearch && matchesEmotion && matchesDate;
-    })
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    return matchesSearch && matchesEmotion && matchesDate;
+  })
+  .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
