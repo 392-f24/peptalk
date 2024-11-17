@@ -105,7 +105,7 @@ export const generateRecap = async (req, res) => {
     "totalEntries": 10
   }
   
-  Return only the JSON object as shown above.`,
+  Return only the JSON object as shown above. Use language like "you...", do NOT say "user...", that is too cold.`,
             },
           ],
         },
