@@ -6,7 +6,6 @@ import useStore from "../store/store";
 const LoginPage = () => {
   const [user] = useAuthState();
   const navigate = useNavigate();
-  const setUserId = useStore((state) => state.setUserId); 
   const login = useStore((state) => state.login);
 
 

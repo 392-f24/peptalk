@@ -5,7 +5,9 @@ import axiosInstance from "../utilities/axiosHelper";
 const useStore = create((set, get) => ({
   //unique googleID (saved at login to this state + local storage)
   userId: null, 
+  name: null, 
   setUserId: (id) => set({ userId: id }),
+  setName: (name) => set({ name: name }),
 
   //Global state 
   entries: [], 
@@ -20,8 +22,9 @@ const useStore = create((set, get) => ({
       const response = await axiosInstance.post('/auth/signup', { userId: googleUid, name })
   
       if (response.status === 200) { 
-        set({ userId: googleUid })
+        set({ userId: googleUid, name: name })
         localStorage.setItem('userId', googleUid)
+        localStorage.setItem('name', name)
         navigate("/dashboard")
       } else {
         console.error("Failed to add user to MongoDB:", response.data.message);

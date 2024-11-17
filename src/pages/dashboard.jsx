@@ -7,7 +7,7 @@ import { signOut } from "../utilities/firebase_helper";
 const emotions = ["😊", "😔", "😡", "😌", "🥰", "😤", "😢"];
 
 const Dashboard = () => {
-  const { entries, recaps, fetchEntries, createEntry, deleteEntry, fetchRecaps, createRecap, deleteRecap } = useStore();
+  const { name, entries, recaps, fetchEntries, createEntry, deleteEntry, fetchRecaps, createRecap, deleteRecap } = useStore();
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,8 +28,12 @@ const Dashboard = () => {
 
   useEffect(() => {
     const savedUserId = localStorage.getItem("userId");
+    const savedName = localStorage.getItem("name")
     if (savedUserId) {
       useStore.getState().setUserId(savedUserId); 
+    }
+    if (savedName) {
+      useStore.getState().setName(savedName)
     }
   }, []);
 
@@ -126,26 +130,45 @@ const Dashboard = () => {
     `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
   const generateCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentDate);
-    const firstDayOfMonth = getFirstDayOfMonth(currentDate);
+    const daysInMonth = getDaysInMonth(currentDate); 
+    const firstDayOfMonth = getFirstDayOfMonth(currentDate); 
     const days = [];
-
+  
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(null);
     }
-
+  
     for (let day = 1; day <= daysInMonth; day++) {
       const date = formatDate(
         currentDate.getFullYear(),
         currentDate.getMonth(),
         day
       );
-      const entry = entries.find((e) => e.date === date);
-      days.push({ day, date, entry });
+  
+      const dayEntries = entries.filter((entry) => {
+        const entryDate = new Date(entry.date);
+        return (
+          entryDate.getDate() === day &&
+          entryDate.getMonth() === currentDate.getMonth() &&
+          entryDate.getFullYear() === currentDate.getFullYear()
+        );
+      });
+  
+      const earliestEmoji = dayEntries.length > 0 ? dayEntries[0].emoji : null;
+  
+      days.push({
+        day,
+        date,
+        emoji: earliestEmoji,
+      });
     }
-
+  
     return days;
   };
+  
+  
+  
+  
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const calendarDays = generateCalendarDays();
@@ -167,7 +190,7 @@ const Dashboard = () => {
   const handleDayClick = (day) => {
     if (!day) return;
     setSelectedDate(
-      selectedDate === day.date ? null : day.date // Ensure it's in YYYY-MM-DD format
+      selectedDate === day.date ? null : day.date 
     );
   };
   
@@ -186,9 +209,10 @@ const Dashboard = () => {
     const matchesEmotion = selectedEmotion
       ? entry.emoji === selectedEmotion
       : true;
+
     const matchesDate = selectedDate
-      ? new Date(entry.date).toISOString().split("T")[0] ===
-        new Date(selectedDate).toISOString().split("T")[0]
+      ? new Date(entry.date).toDateString() ===
+        new Date(selectedDate).toDateString()
       : true;
 
     return matchesSearch && matchesEmotion && matchesDate;
@@ -206,9 +230,9 @@ const Dashboard = () => {
         Sign Out
       </button>
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex justify-center">
           <h1 className="text-2xl font-semibold text-gray-800">
-            PepTalk Journal
+            {name ? `${name}'s PepTalk` : "PepTalk"}
           </h1>
         </div>
 
@@ -248,28 +272,24 @@ const Dashboard = () => {
                   {day[0]}
                 </div>
               ))}
-              {calendarDays.map((day, index) => (
-                <div
-                  key={index}
-                  onClick={() => day && handleDayClick(day)}
-                  className={`aspect-square p-1 border rounded cursor-pointer ${
-                    day ? "hover:bg-gray-50" : ""
-                  } ${
-                    day?.date === selectedDate
-                      ? "border-blue-500 bg-blue-50"
-                      : ""
-                  }`}
-                >
-                  {day && (
-                    <div className="h-full flex flex-col justify-between">
-                      <div className="text-xs text-gray-600">{day.day}</div>
-                      <div className="text-base flex justify-center">
-                        {day.entry?.emoji || ""}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+            {calendarDays.map((day, index) => (
+              <div
+                key={index}
+                onClick={() => day && handleDayClick(day)}
+                className={`aspect-square p-1 border rounded cursor-pointer ${
+                  day ? "hover:bg-gray-50" : ""
+                } ${
+                  day?.date === selectedDate ? "border-blue-500 bg-blue-50" : ""
+                }`}
+              >
+                {day && (
+                  <div className="h-full flex flex-col justify-between items-center">
+                    <div className="text-xs text-gray-600">{day.day}</div>
+                    <div className="mb-1">{day.emoji || ""}</div> 
+                  </div>
+                )}
+              </div>
+            ))}
             </div>
 
             {/* Create Recap Button */}
