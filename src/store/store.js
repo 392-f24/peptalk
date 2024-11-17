@@ -39,7 +39,7 @@ const useStore = create((set, get) => ({
     try {
       const userId = get().userId
       const response = await axiosInstance.get('/entry/entry-data', {
-        params: { userId },
+        params: { userId }
       });
       set({ entries: response.data.entries });
     } catch (error) {
@@ -96,9 +96,27 @@ const useStore = create((set, get) => ({
   fetchRecaps: async () => {
     try {
         const userId = get().userId 
-        const response = await axiosInstance.get('/recap/recap-data')
+        const response = await axiosInstance.get('/recap/recap-data', {
+          params: { userId }
+        })
+        set({ recaps: response.data.recaps })
     } catch (error) {
         console.error('Error fetching recaps:', error.response?.data || error.message);
+    }
+  }, 
+
+  deleteRecap: async (recapId) => {
+    try {
+      const userId = get().userId 
+      const response = await axiosInstance.delete('/recap/delete-recap', {
+        params: { userId, recapId }
+      })
+      set((state) => {
+        const deleteOneRecap = state.recaps.filter(recap=>recap._id!==recapId)
+        return { recaps: deleteOneRecap }
+      })
+    } catch (error) {
+      console.error('Error deleting recap:', error.response?.data || error.message);
     }
   }
 

@@ -2,7 +2,7 @@ import monthRecap from "../models/MonthRecap.js";
 import axios from "axios";
 
 export const recapData = async (req, res) => {
-    const userId = req.body.userId 
+    const userId = req.query.userId 
     try { 
         const recaps = await monthRecap.find({userId: userId})
         if (recaps.length===0) {
@@ -48,8 +48,8 @@ export const createRecap = async (req, res) => {
 
 
 export const deleteRecap = async (req, res) => {
-    const userId = req.body.userId 
-    const { recapId } = req.body 
+    const userId = req.query.userId 
+    const { recapId } = req.query 
     try {
         const recap = await monthRecap.findOneAndDelete({_id: recapId, userId: userId })
         if (!recap) {
