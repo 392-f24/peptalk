@@ -5,7 +5,7 @@ import useStore from "../store/store";
 import { signOut } from "../utilities/firebase_helper";
 import Calendar from "../components/calendar";
 import EntryCard from "../components/entryCard";
-import RecapModal from './recapModal';
+import RecapModal from "./recapModal";
 
 const emotions = ["😊", "😔", "😡", "😌", "🥰", "😤", "😢"];
 

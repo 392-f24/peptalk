@@ -1,8 +1,21 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
 
 const EntryCard = ({ entry, onDelete }) => {
+
+  const navigate = useNavigate();
+
+  const handleClick = (e) => {
+    if (e.target.closest('button[data-delete]')) {
+      return;
+    }
+    navigate(`/entry/${entry._id}`);
+  };
+
+
   return (
-    <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow relative">
+    <div onClick={handleClick} className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow relative">
       <button
         onClick={() => onDelete(entry._id)}
         className="absolute top-2 right-2 text-red-500 hover:text-red-700"
