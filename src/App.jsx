@@ -5,6 +5,7 @@ import { Search, BookmarkPlus, BookmarkCheck, ChevronLeft, ChevronRight, X, Plus
 import Dashboard from "./pages/dashboard";
 import LoginPage from "./pages/login";
 import Entry from './pages/entry';
+import JournalEntryPage from './pages/JournalEntryPage';
 
 const App = () => {
   return (
@@ -13,6 +14,7 @@ const App = () => {
         <Route path="/" element={<LoginPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/new-entry" element={<Entry />} />
+        <Route path="/entry/:id" element={<JournalEntryPage />} />
       </Routes>
     </Router>
   );
