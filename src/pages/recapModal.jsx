@@ -41,8 +41,8 @@ const RecapModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-900/75 flex justify-center items-center p-4">
-      <div className="bg-white rounded-xl p-8 max-w-screen-md shadow-2xl relative animate-fadeIn">
+    <div className="fixed inset-0 bg-gray-900/75 flex justify-center items-center p-8">
+      <div className="bg-white rounded-xl p-8 max-w-screen-md h-[90vh] overflow-y-scroll shadow-2xl relative animate-fadeIn">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -55,7 +55,7 @@ const RecapModal = ({
         </button>
 
         {selectedMonthRecap ? (
-          <div className="space-y-6">
+          <div className="space-y-6 ">
             <div className="text-center pb-4 border-b border-gray-100">
               <h3 className="text-2xl font-bold text-gray-800">{selectedMonthRecap.recapName}</h3>
             </div>
