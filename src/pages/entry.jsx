@@ -144,8 +144,7 @@ const Entry = () => {
     };
 
     console.log('Saving entry:', newEntry);
-    navigate('/');
-    // navigate(`/entry/${newEntry.id}`);
+    navigate(`/entry/${newEntry.id}`);
   };
 
   return (

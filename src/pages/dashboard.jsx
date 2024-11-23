@@ -52,14 +52,12 @@ const Dashboard = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
+
       try {
         await Promise.all([fetchEntries(), fetchRecaps()]);
       } catch (err) {
         setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
+      } 
     };
     loadData();
   }, [fetchEntries, fetchRecaps]);
@@ -89,6 +87,7 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Error creating entry:", error);
     }
+    navigate('/new-entry')
   };
 
   const handleCreateRecap = async () => {
@@ -209,7 +208,7 @@ const Dashboard = () => {
                 ))}
               </div>
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => navigate('/new-entry')}
                 className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition ml-3"
               >
                 + Create Entry
