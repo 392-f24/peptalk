@@ -148,7 +148,7 @@ const Dashboard = () => {
         Sign Out
       </button>
       
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="sm:max-w-6xl sm:max-w-7xl mx-auto space-y-6">
         <div className="flex justify-center">
           <h1 className="text-2xl font-semibold text-gray-800">
             {name ? `${name}'s PepTalk` : "PepTalk"}
@@ -156,7 +156,7 @@ const Dashboard = () => {
         </div>
 
         <div className="flex-row sm:flex gap-6">
-          <div className="w-2/5">
+          <div className="w-full sm:w-2/5">
             <Calendar
               currentDate={currentDate}
               selectedDate={selectedDate}
@@ -171,7 +171,7 @@ const Dashboard = () => {
             />
           </div>
 
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 w-full sm:w-2/5">
             <div className="flex gap-3 items-center">
               <div className="relative flex-1">
                 <Search
