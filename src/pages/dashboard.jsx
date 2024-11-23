@@ -12,8 +12,8 @@ const emotions = ["😊", "😔", "😡", "😌", "🥰", "😤", "😢"];
 const Dashboard = () => {
   const { 
     name, 
-    entries, 
-    recaps, 
+    entries = [], // Provide default empty array
+    recaps = [], // Provide default empty array
     fetchEntries, 
     createEntry, 
     deleteEntry, 
@@ -31,6 +31,7 @@ const Dashboard = () => {
   const [isRecapModalOpen, setIsRecapModalOpen] = useState(false);
   const [isCreatingRecap, setIsCreatingRecap] = useState(false);
   const [buttonText, setButtonText] = useState("Create Recap");
+  const [error, setError] = useState(null);
   const [newEntry, setNewEntry] = useState({
     name: "",
     date: "",
@@ -52,11 +53,11 @@ const Dashboard = () => {
 
   useEffect(() => {
     const loadData = async () => {
-
       try {
         await Promise.all([fetchEntries(), fetchRecaps()]);
       } catch (err) {
         setError(err.message);
+        console.error("Error loading data:", err);
       } 
     };
     loadData();
