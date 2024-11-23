@@ -21,15 +21,6 @@ const Entry = () => {
     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
     dangerouslyAllowBrowser: true
   });
-  
-  const getCurrentDate = () => {
-    return new Date().toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
 
   useEffect(() => {
     audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -43,7 +34,9 @@ const Entry = () => {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
       audioChunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = handleAudioData;
@@ -55,17 +48,62 @@ const Entry = () => {
     }
   };
 
+  const convertToWav = async (audioBlob) => {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    
+    const wavBuffer = audioContext.createBuffer(
+      audioBuffer.numberOfChannels,
+      audioBuffer.length,
+      audioBuffer.sampleRate
+    );
+
+    for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+      const channelData = audioBuffer.getChannelData(channel);
+      wavBuffer.copyToChannel(channelData, channel);
+    }
+
+    const wavBlob = await new Promise(resolve => {
+      const offlineContext = new OfflineAudioContext(
+        audioBuffer.numberOfChannels,
+        audioBuffer.length,
+        audioBuffer.sampleRate
+      );
+      
+      const source = offlineContext.createBufferSource();
+      source.buffer = wavBuffer;
+      source.connect(offlineContext.destination);
+      source.start();
+
+      offlineContext.startRendering().then(renderedBuffer => {
+        const wavData = new Float32Array(renderedBuffer.length);
+        renderedBuffer.copyFromChannel(wavData, 0);
+        
+        const wav = new Blob([wavData], { type: 'audio/wav' });
+        resolve(wav);
+      });
+    });
+
+    return wavBlob;
+  };
+
   const handleAudioData = async (event) => {
     if (event.data.size > 0) {
       audioChunksRef.current.push(event.data);
-      await processAudioChunk(event.data);
+      try {
+        const wavBlob = await convertToWav(event.data);
+        await processAudioChunk(wavBlob);
+      } catch (error) {
+        console.error('Error processing audio chunk:', error);
+      }
     }
   };
 
-  const processAudioChunk = async (audioChunk) => {
+  const processAudioChunk = async (audioBlob) => {
     try {
       const formData = new FormData();
-      formData.append('file', new Blob([audioChunk], { type: 'audio/webm' }));
+      formData.append('file', audioBlob, 'audio.wav');
       formData.append('model', 'whisper-1');
 
       const response = await openai.audio.transcriptions.create({
@@ -75,7 +113,7 @@ const Entry = () => {
 
       if (response.text) {
         const completion = await openai.chat.completions.create({
-          model: "gpt-4",
+          model: "gpt-4o",
           messages: [
             { 
               role: "system", 
