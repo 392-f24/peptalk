@@ -1,26 +1,22 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { X, Edit2, Check, XCircle } from 'lucide-react';
+import useStore from '../store/store';
 
 const JournalEntryPage = () => {
   const navigate = useNavigate();
+  const { entryId } = useParams();
   const [isTranscriptVisible, setIsTranscriptVisible] = useState(false);
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [editedSummary, setEditedSummary] = useState('');
   
-  // Mock data - would come from Firebase later
-  const [entry, setEntry] = useState({
-    id: "1",
-    title: "My First Journal Entry",
-    date: "2024-11-17",
-    summary: "A productive day filled with accomplishments and positive energy. Completed all tasks and enjoyed some time outdoors.",
-    transcript: [
-      "I had a really productive day today. Got everything done on my list.",
-      "It feels great! I even had time for a walk in the park.",
-      "The weather was perfect and I got to enjoy some fresh air."
-    ],
-    emotion: "😊"
-  });
+  // Get store actions and entries
+  const { entries, fetchEntries, updateEntry, deleteEntry } = useStore();
+  const entry = entries.find(e => e._id === entryId);
+
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -32,17 +28,35 @@ const JournalEntryPage = () => {
   };
 
   const handleEditClick = () => {
-    setEditedSummary(entry.summary);
+    setEditedSummary(entry?.summary || '');
     setIsEditingSummary(true);
   };
 
-  const handleSaveSummary = () => {
-    setEntry(prev => ({
-      ...prev,
-      summary: editedSummary
-    }));
-    setIsEditingSummary(false);
-    // Here you would update Firebase with the new summary
+  const handleSaveSummary = async () => {
+    if (!entry) return;
+    
+    try {
+      const updatedTranscript = {
+        ...entry,
+        summary: editedSummary
+      };
+      
+      await updateEntry(entry._id, updatedTranscript);
+      setIsEditingSummary(false);
+    } catch (error) {
+      console.error('Error updating entry:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!entry) return;
+    
+    try {
+      await deleteEntry(entry._id);
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -50,28 +64,43 @@ const JournalEntryPage = () => {
     setEditedSummary('');
   };
 
+  if (!entry) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-gray-500">Loading entry...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Main Content */}
         <div className="bg-white rounded-lg p-8 shadow-sm space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-semibold text-gray-800">{entry.title}</h1>
-                <span className="text-2xl">{entry.emotion}</span>
+                <h1 className="text-2xl font-semibold text-gray-800">{entry.name}</h1>
+                <span className="text-2xl">{entry.emoji}</span>
               </div>
               <div className="text-sm text-gray-500">
                 {formatDate(entry.date)}
               </div>
             </div>
-            <button 
-              onClick={() => navigate('/')}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded-full"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleDelete}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-full"
+              >
+                <XCircle size={20} />
+              </button>
+              <button 
+                onClick={() => navigate('/')}
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded-full"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
           {/* Summary Section */}
@@ -131,7 +160,7 @@ const JournalEntryPage = () => {
 
             {isTranscriptVisible && (
               <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                {entry.transcript.map((line, index) => (
+                {entry.transcript.split('\n').map((line, index) => (
                   <p 
                     key={index} 
                     className="text-gray-700 leading-relaxed"

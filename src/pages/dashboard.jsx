@@ -209,7 +209,7 @@ const Dashboard = () => {
                 ))}
               </div>
               <button
-                onClick={() => navigate('/new-entry')}
+                onClick={() => setIsModalOpen(true)}
                 className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition ml-3"
               >
                 + Create Entry
