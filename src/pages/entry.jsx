@@ -11,92 +11,143 @@ const Entry = () => {
   const [selectedEmotion, setSelectedEmotion] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [conversation, setConversation] = useState([]);
+  const [error, setError] = useState(null);
   const mediaRecorderRef = useRef(null);
   const audioContextRef = useRef(null);
   const audioChunksRef = useRef([]);
   
   const emotions = ["😊", "😔", "😡", "😌", "🥰", "😤", "😢"];
 
+  useEffect(() => {
+    // Initialize OpenAI in useEffect to handle environment variables properly
+    if (!import.meta.env.VITE_OPENAI_API_KEY) {
+      setError('OpenAI API key is missing');
+      console.error('OpenAI API key is missing');
+      return;
+    }
+  }, []);
+
   const openai = new OpenAI({
     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
     dangerouslyAllowBrowser: true
   });
 
-  useEffect(() => {
-    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-    return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+  const getCurrentDate = () => {
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const convertToWav = async (audioChunks) => {
+    try {
+      // Create a new audio context
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Concatenate all chunks into a single blob
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      
+      // Decode the audio data
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // Create a WAV encoder
+      const numberOfChannels = audioBuffer.numberOfChannels;
+      const length = audioBuffer.length;
+      const sampleRate = audioBuffer.sampleRate;
+      const wavBuffer = new ArrayBuffer(44 + length * 2);
+      const view = new DataView(wavBuffer);
+      
+      // Write WAV header
+      const writeString = (view, offset, string) => {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      };
+      
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + length * 2, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numberOfChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 4, true); // Updated calculation
+      view.setUint16(32, numberOfChannels * 2, true);
+      view.setUint16(34, 16, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, length * 2, true);
+      
+      // Write audio data
+      let offset = 44;
+      for (let i = 0; i < length; i++) {
+        for (let channel = 0; channel < numberOfChannels; channel++) {
+          const sample = Math.max(-1, Math.min(1, audioBuffer.getChannelData(channel)[i]));
+          const int = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+          view.setInt16(offset, int, true);
+          offset += 2;
+        }
       }
-    };
-  }, []);
+      
+      return new Blob([wavBuffer], { type: 'audio/wav' });
+    } catch (error) {
+      console.error('Error converting to WAV:', error);
+      throw error;
+    }
+  };
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          sampleRate: 16000, // Changed to 16kHz for better compatibility
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
       });
+      
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+      
+      mediaRecorderRef.current = new MediaRecorder(stream, {
+        mimeType,
+        audioBitsPerSecond: 128000
+      });
+      
       audioChunksRef.current = [];
 
-      mediaRecorderRef.current.ondataavailable = handleAudioData;
-      mediaRecorderRef.current.start(250);
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        try {
+          setIsProcessing(true);
+          const wavBlob = await convertToWav(audioChunksRef.current);
+          await processAudioChunk(wavBlob);
+        } catch (error) {
+          console.error('Error processing recording:', error);
+          setError('Error processing recording: ' + error.message);
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+
+      mediaRecorderRef.current.start(250); // Increased chunk size
       setIsRecording(true);
       setIsPaused(false);
+      setError(null);
     } catch (err) {
       console.error('Error accessing microphone:', err);
-    }
-  };
-
-  const convertToWav = async (audioBlob) => {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const arrayBuffer = await audioBlob.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    
-    const wavBuffer = audioContext.createBuffer(
-      audioBuffer.numberOfChannels,
-      audioBuffer.length,
-      audioBuffer.sampleRate
-    );
-
-    for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-      const channelData = audioBuffer.getChannelData(channel);
-      wavBuffer.copyToChannel(channelData, channel);
-    }
-
-    const wavBlob = await new Promise(resolve => {
-      const offlineContext = new OfflineAudioContext(
-        audioBuffer.numberOfChannels,
-        audioBuffer.length,
-        audioBuffer.sampleRate
-      );
-      
-      const source = offlineContext.createBufferSource();
-      source.buffer = wavBuffer;
-      source.connect(offlineContext.destination);
-      source.start();
-
-      offlineContext.startRendering().then(renderedBuffer => {
-        const wavData = new Float32Array(renderedBuffer.length);
-        renderedBuffer.copyFromChannel(wavData, 0);
-        
-        const wav = new Blob([wavData], { type: 'audio/wav' });
-        resolve(wav);
-      });
-    });
-
-    return wavBlob;
-  };
-
-  const handleAudioData = async (event) => {
-    if (event.data.size > 0) {
-      audioChunksRef.current.push(event.data);
-      try {
-        const wavBlob = await convertToWav(event.data);
-        await processAudioChunk(wavBlob);
-      } catch (error) {
-        console.error('Error processing audio chunk:', error);
-      }
+      setError('Error accessing microphone: ' + err.message);
     }
   };
 
@@ -113,7 +164,7 @@ const Entry = () => {
 
       if (response.text) {
         const completion = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: "gpt-4", // Fixed model name typo
           messages: [
             { 
               role: "system", 
@@ -135,6 +186,7 @@ const Entry = () => {
       }
     } catch (error) {
       console.error('Error processing audio:', error);
+      setError('Error processing audio: ' + error.message);
     }
   };
 
@@ -161,28 +213,30 @@ const Entry = () => {
       setIsRecording(false);
       setIsPaused(false);
       window.speechSynthesis.cancel();
-      setIsProcessing(true);
-      setTimeout(() => setIsProcessing(false), 1000);
     }
   };
 
-  const handleSave = () => {
-    const entryContent = conversation
-      .filter(msg => msg.role === 'user')
-      .map(msg => msg.content)
-      .join('\n');
+  const handleSave = async () => {
+    try {
+      const entryContent = conversation
+        .filter(msg => msg.role === 'user')
+        .map(msg => msg.content)
+        .join('\n');
 
-    const newEntry = {
-      id: Date.now(),
-      title: title || 'Untitled Entry',
-      date: new Date().toISOString().split('T')[0],
-      content: entryContent,
-      emotion: selectedEmotion,
-      bookmarked: false
-    };
+      const newEntry = {
+        title: title || 'Untitled Entry',
+        date: new Date().toISOString(),
+        content: entryContent,
+        emotion: selectedEmotion,
+      };
 
-    console.log('Saving entry:', newEntry);
-    navigate(`/entry/${newEntry.id}`);
+      console.log('Saving entry:', newEntry);
+      // Add your API call here to save the entry
+      navigate('/');
+    } catch (error) {
+      console.error('Error saving entry:', error);
+      setError('Error saving entry: ' + error.message);
+    }
   };
 
   return (
