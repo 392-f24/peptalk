@@ -6,8 +6,8 @@ import {
   signInWithPopup,
   signOut,
 } from "firebase/auth";
-import { getDatabase, ref, set } from "firebase/database";
-import firebase from "../firebase";
+import { getDatabase, ref, get, set, remove } from "firebase/database";
+import {firebase} from "../firebase";
 
 console.log("Firebase helper initializing..."); // Debug log
 const auth = getAuth(firebase);
@@ -59,3 +59,27 @@ export const useUser = () => {
   const [user] = useAuthState();
   return user;
 };
+
+// return profile if exsits, else create
+export const getProfile = async (uid, name) => {
+
+    try {
+        const userRef = ref(db, `${uid}`);
+        const userSnapshot = await get(userRef);
+        
+        if (!userSnapshot.exists()) {
+            console.log(name)
+            const initialData = {
+                recap: {},
+                Entries: new Date().toISOString(),
+                displayName: name
+            };
+            await set(userRef, initialData); // Using set instead of update for initial data
+            return initialData;
+        }
+        return userSnapshot.val();
+    } catch (error) {
+        console.error("Error in getProfile:", error);
+        throw error;
+    }
+}
