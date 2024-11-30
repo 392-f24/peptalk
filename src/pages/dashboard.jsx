@@ -27,11 +27,12 @@ const Dashboard = () => {
   const [selectedEmotion, setSelectedEmotion] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRecapModalOpen, setIsRecapModalOpen] = useState(false);
   const [isCreatingRecap, setIsCreatingRecap] = useState(false);
   const [buttonText, setButtonText] = useState("Create Recap");
   const [error, setError] = useState(null);
+
+  /* Removed old entry state
   const [newEntry, setNewEntry] = useState({
     name: "",
     date: "",
@@ -39,6 +40,7 @@ const Dashboard = () => {
     summary: "",
     transcript: "",
   });
+  */
 
   useEffect(() => {
     const savedUserId = localStorage.getItem("userId");
@@ -74,6 +76,7 @@ const Dashboard = () => {
     }
   };
 
+  /* Removed old create entry handler
   const handleCreateEntry = async () => {
     try {
       await createEntry(
@@ -90,6 +93,7 @@ const Dashboard = () => {
     }
     navigate('/new-entry')
   };
+  */
 
   const handleCreateRecap = async () => {
     try {
@@ -209,7 +213,7 @@ const Dashboard = () => {
                 ))}
               </div>
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => navigate('/new-entry')}
                 className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition ml-3"
               >
                 + Create Entry
@@ -242,71 +246,10 @@ const Dashboard = () => {
           onClose={() => setIsRecapModalOpen(false)}
           selectedMonthRecap={getRecapForSelectedMonth()}
           onDeleteRecap={deleteRecap}
-        />)}
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
-            <h3 className="text-lg font-medium mb-4">Create New Entry</h3>
-            <input
-              type="text"
-              placeholder="Name"
-              className="w-full mb-2 p-2 border rounded"
-              value={newEntry.name}
-              onChange={(e) =>
-                setNewEntry({ ...newEntry, name: e.target.value })
-              }
-            />
-            <input
-              type="date"
-              className="w-full mb-2 p-2 border rounded"
-              value={newEntry.date}
-              onChange={(e) =>
-                setNewEntry({ ...newEntry, date: e.target.value })
-              }
-            />
-            <input
-              type="text"
-              placeholder="Emoji"
-              className="w-full mb-2 p-2 border rounded"
-              value={newEntry.emoji}
-              onChange={(e) =>
-                setNewEntry({ ...newEntry, emoji: e.target.value })
-              }
-            />
-            <textarea
-              placeholder="Summary"
-              className="w-full mb-2 p-2 border rounded"
-              value={newEntry.summary}
-              onChange={(e) =>
-                setNewEntry({ ...newEntry, summary: e.target.value })
-              }
-            />
-            <textarea
-              placeholder="Transcript"
-              className="w-full mb-2 p-2 border rounded"
-              value={newEntry.transcript}
-              onChange={(e) =>
-                setNewEntry({ ...newEntry, transcript: e.target.value })
-              }
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateEntry}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
+        />
       )}
+
+      {/* Removed old entry modal */}
     </div>
   );
 };
