@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { X, Edit2, Check, XCircle } from 'lucide-react';
 import { firebaseJournalService } from '../utilities/EntryFirebaseHelper';
-import { usePepContext } from '../utilities/context'; // Make sure this path is correct
+import { usePepContext } from '../utilities/context';
 
 const JournalEntryPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { user, loading: authLoading } = usePepContext(); // Add this line to get user from context
+  const { user, loading: authLoading } = usePepContext();
   const [isTranscriptVisible, setIsTranscriptVisible] = useState(false);
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [editedSummary, setEditedSummary] = useState('');
@@ -17,6 +17,7 @@ const JournalEntryPage = () => {
   useEffect(() => {
     const loadEntry = async () => {
       if (!user) {
+
         console.log('No user found, redirecting to login');
         navigate('/login');
         return;
@@ -28,6 +29,7 @@ const JournalEntryPage = () => {
       try {
         const entryData = await firebaseJournalService.fetchEntry(user.uid, id);
         console.log('Entry data received:', entryData);
+
         if (entryData) {
           setEntry(entryData);
         } else {
@@ -90,10 +92,18 @@ const JournalEntryPage = () => {
     setEditedSummary('');
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
         <div className="text-gray-500">Loading entry...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-gray-500">Please log in to view this entry.</div>
       </div>
     );
   }

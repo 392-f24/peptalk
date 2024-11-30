@@ -263,7 +263,7 @@ const Entry = () => {
       // Save to Firebase
       await set(newEntryRef, entryData);
       console.log('Entry saved successfully');
-      navigate('/dashboard');
+      navigate(`/dashboard`);
     } catch (error) {
       console.error('Error saving entry:', error);
       setError('Error saving entry: ' + error.message);
