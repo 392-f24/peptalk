@@ -1,22 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { X, Edit2, Check, XCircle } from 'lucide-react';
-import useStore from '../store/store';
+import { firebaseJournalService } from '../utilities/EntryFirebaseHelper';
 
 const JournalEntryPage = () => {
   const navigate = useNavigate();
-  const { entryId } = useParams();
+  const { id } = useParams();
   const [isTranscriptVisible, setIsTranscriptVisible] = useState(false);
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [editedSummary, setEditedSummary] = useState('');
+  const [entry, setEntry] = useState(null);
+  const [loading, setLoading] = useState(true);
   
-  // Get store actions and entries
-  const { entries, fetchEntries, updateEntry, deleteEntry } = useStore();
-  const entry = entries.find(e => e._id === entryId);
-
+  // Get current user ID - you'll need to implement your auth logic
+  const userId = "current-user-id"; // Replace with actual user ID from auth
+  
   useEffect(() => {
-    fetchEntries();
-  }, [fetchEntries]);
+    const loadEntry = async () => {
+      try {
+        const entryData = await firebaseJournalService.fetchEntry(userId, id);
+        if (entryData) {
+          setEntry(entryData);
+        } else {
+          navigate('/');
+        }
+      } catch (error) {
+        console.error('Error loading entry:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadEntry();
+  }, [id, userId, navigate]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -36,15 +52,14 @@ const JournalEntryPage = () => {
     if (!entry) return;
     
     try {
-      const updatedTranscript = {
-        ...entry,
+      await firebaseJournalService.updateEntrySummary(userId, id, editedSummary);
+      setEntry(prev => ({
+        ...prev,
         summary: editedSummary
-      };
-      
-      await updateEntry(entry._id, updatedTranscript);
+      }));
       setIsEditingSummary(false);
     } catch (error) {
-      console.error('Error updating entry:', error);
+      console.error('Error updating summary:', error);
     }
   };
 
@@ -52,7 +67,7 @@ const JournalEntryPage = () => {
     if (!entry) return;
     
     try {
-      await deleteEntry(entry._id);
+      await firebaseJournalService.deleteEntry(userId, id);
       navigate('/');
     } catch (error) {
       console.error('Error deleting entry:', error);
@@ -64,10 +79,18 @@ const JournalEntryPage = () => {
     setEditedSummary('');
   };
 
-  if (!entry) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
         <div className="text-gray-500">Loading entry...</div>
+      </div>
+    );
+  }
+
+  if (!entry) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-gray-500">Entry not found</div>
       </div>
     );
   }
