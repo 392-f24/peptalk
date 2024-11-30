@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { PepProvider as PepProvider } from './utilities/context';
+import { PepProvider } from './utilities/context';
 import Dashboard from "./pages/dashboard";
 import LoginPage from "./pages/login";
 import Entry from './pages/entry';

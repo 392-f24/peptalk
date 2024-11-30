@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { ref, get, getDatabase } from 'firebase/database';
-import { app } from '../firebase';
+import { firebase } from '../firebase';
 import {
   handleGoogleLogin,
   signOut,
@@ -21,7 +21,7 @@ export function PepProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  const db = getDatabase(app);
+  const db = getDatabase(firebase);
 
   // Fetch user profile and entries when user changes
   useEffect(() => {

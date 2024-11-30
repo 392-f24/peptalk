@@ -6,12 +6,12 @@ import {
   signInWithPopup,
   signOut,
 } from "firebase/auth";
-import { getDatabase, ref, set } from "firebase/database";
-import { app } from "../firebase";
+import { getDatabase, get, ref, set } from "firebase/database";
+import { firebase } from "../firebase";
 
 console.log("Firebase helper initializing..."); 
-const auth = getAuth(app);
-const db = getDatabase(app);
+const auth = getAuth(firebase);
+const db = getDatabase(firebase);
 console.log("Auth initialized successfully");
 
 export const signInWithGoogle = () => {

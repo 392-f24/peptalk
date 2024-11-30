@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const EntryCard = ({ entry, onDelete }) => {
-  console.log('entry card')
   const navigate = useNavigate();
 
   const handleClick = (e) => {
