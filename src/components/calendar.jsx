@@ -1,23 +1,37 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const Calendar = ({
+const Calendar = ({ 
   currentDate,
   selectedDate,
   entries,
-  onPreviousMonth,
-  onNextMonth,
-  onDayClick,
+  onDateChange,
   onCreateRecap,
   onViewRecap,
-  isCreatingRecap,
-  buttonText
+  isCreatingRecap 
 }) => {
   const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   
   const formatDate = (year, month, day) =>
     `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+  const handlePreviousMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    onDateChange('month', newDate);
+  };
+
+  const handleNextMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    onDateChange('month', newDate);
+  };
+
+  const handleDayClick = (day) => {
+    // If the clicked day is already selected, unselect it (set to null or empty string)
+    onDateChange('day', day.date === selectedDate ? '' : day.date);
+  };
 
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentDate);
@@ -50,6 +64,7 @@ const Calendar = ({
         day,
         date,
         emoji: earliestEmoji,
+        entryCount: dayEntries.length
       });
     }
 
@@ -67,7 +82,7 @@ const Calendar = ({
         </h2>
         <div className="flex items-center gap-2">
           <button
-            onClick={onPreviousMonth}
+            onClick={handlePreviousMonth}
             className="p-1 hover:bg-gray-100 rounded"
           >
             <ChevronLeft size={16} />
@@ -79,7 +94,7 @@ const Calendar = ({
             })}
           </span>
           <button
-            onClick={onNextMonth}
+            onClick={handleNextMonth}
             className="p-1 hover:bg-gray-100 rounded"
           >
             <ChevronRight size={16} />
@@ -99,9 +114,9 @@ const Calendar = ({
         {calendarDays.map((day, index) => (
           <div
             key={index}
-            onClick={() => day && onDayClick(day)}
-            className={`aspect-square p-1 border rounded cursor-pointer ${
-              day ? "hover:bg-gray-50" : ""
+            onClick={() => day && handleDayClick(day)}
+            className={`aspect-square p-1 border rounded ${
+              day ? "cursor-pointer hover:bg-gray-50" : ""
             } ${
               day?.date === selectedDate ? "border-blue-500 bg-blue-50" : ""
             }`}
@@ -109,7 +124,14 @@ const Calendar = ({
             {day && (
               <div className="h-full flex flex-col justify-between items-center">
                 <div className="text-xs text-gray-600">{day.day}</div>
-                <div className="mb-1">{day.emoji || ""}</div>
+                <div className="mb-1">
+                  {day.emoji || ""}
+                  {day.entryCount > 1 && (
+                    <span className="text-xs text-gray-500 ml-1">
+                      +{day.entryCount - 1}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -123,7 +145,7 @@ const Calendar = ({
           isCreatingRecap ? "bg-gray-400 text-gray-700" : "bg-blue-500 text-white hover:bg-blue-600"
         }`}
       >
-        {buttonText}
+        {isCreatingRecap ? 'Creating Recap...' : 'Create Monthly Recap'}
       </button>
 
       <button
