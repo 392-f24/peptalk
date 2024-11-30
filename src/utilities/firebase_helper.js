@@ -62,24 +62,23 @@ export const useUser = () => {
 
 // return profile if exsits, else create
 export const getProfile = async (uid, name) => {
+  try {
+    const userRef = ref(db, `${uid}`);
+    const userSnapshot = await get(userRef);
 
-    try {
-        const userRef = ref(db, `${uid}`);
-        const userSnapshot = await get(userRef);
-        
-        if (!userSnapshot.exists()) {
-            console.log(name)
-            const initialData = {
-                recap: {},
-                Entries: new Date().toISOString(),
-                displayName: name
-            };
-            await set(userRef, initialData); // Using set instead of update for initial data
-            return initialData;
-        }
-        return userSnapshot.val();
-    } catch (error) {
-        console.error("Error in getProfile:", error);
-        throw error;
+    if (!userSnapshot.exists()) {
+      console.log(name);
+      const initialData = {
+        recap: {},
+        Entries: new Date().toISOString(),
+        displayName: name,
+      };
+      await set(userRef, initialData); // Using set instead of update for initial data
+      return initialData;
     }
-}
+    return userSnapshot.val();
+  } catch (error) {
+    console.error("Error in getProfile:", error);
+    throw error;
+  }
+};
