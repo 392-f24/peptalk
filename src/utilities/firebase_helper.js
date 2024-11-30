@@ -9,7 +9,7 @@ import {
 import { getDatabase, get, ref, set } from "firebase/database";
 import firebase from "../firebase";
 
-console.log("Firebase helper initializing..."); 
+console.log("Firebase helper initializing...");
 const auth = getAuth(firebase);
 const db = getDatabase(firebase);
 console.log("Auth initialized successfully");
@@ -70,7 +70,7 @@ export const getProfile = async (uid, name) => {
       console.log(name);
       const initialData = {
         recap: {},
-        Entries: new Date().toISOString(),
+        entries: {},
         displayName: name,
       };
       await set(userRef, initialData); // Using set instead of update for initial data
