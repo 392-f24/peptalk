@@ -2,23 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { X, Edit2, Check, XCircle } from 'lucide-react';
 import { firebaseJournalService } from '../utilities/EntryFirebaseHelper';
+import { usePepContext } from '../utilities/context'; // Make sure this path is correct
 
 const JournalEntryPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user, loading: authLoading } = usePepContext(); // Add this line to get user from context
   const [isTranscriptVisible, setIsTranscriptVisible] = useState(false);
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [editedSummary, setEditedSummary] = useState('');
   const [entry, setEntry] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-  // Get current user ID - you'll need to implement your auth logic
-  const userId = "current-user-id"; // Replace with actual user ID from auth
-  
+
   useEffect(() => {
     const loadEntry = async () => {
+      if (!user) {
+        console.log('No user found, redirecting to login');
+        navigate('/login');
+        return;
+      }
+
+      console.log('Current user:', user);
+      console.log('Attempting to load entry with ID:', id);
+
       try {
-        const entryData = await firebaseJournalService.fetchEntry(userId, id);
+        const entryData = await firebaseJournalService.fetchEntry(user.uid, id);
+        console.log('Entry data received:', entryData);
         if (entryData) {
           setEntry(entryData);
         } else {
@@ -31,8 +40,10 @@ const JournalEntryPage = () => {
       }
     };
 
-    loadEntry();
-  }, [id, userId, navigate]);
+    if (!authLoading) {
+      loadEntry();
+    }
+  }, [id, user, navigate, authLoading]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -49,10 +60,10 @@ const JournalEntryPage = () => {
   };
 
   const handleSaveSummary = async () => {
-    if (!entry) return;
+    if (!entry || !user) return;
     
     try {
-      await firebaseJournalService.updateEntrySummary(userId, id, editedSummary);
+      await firebaseJournalService.updateEntrySummary(user.uid, id, editedSummary);
       setEntry(prev => ({
         ...prev,
         summary: editedSummary
@@ -62,12 +73,12 @@ const JournalEntryPage = () => {
       console.error('Error updating summary:', error);
     }
   };
-
+  
   const handleDelete = async () => {
-    if (!entry) return;
+    if (!entry || !user) return;
     
     try {
-      await firebaseJournalService.deleteEntry(userId, id);
+      await firebaseJournalService.deleteEntry(user.uid, id);
       navigate('/');
     } catch (error) {
       console.error('Error deleting entry:', error);

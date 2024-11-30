@@ -1,12 +1,12 @@
 {
   "rules": {
-    ".read": false,
-    ".write": false,
     "$userId": {
       ".read": "$userId === auth.uid",
       ".write": "$userId === auth.uid",
       "entries": {
         "$entryId": {
+          ".read": "$userId === auth.uid",
+          ".write": "$userId === auth.uid",
           ".validate": "newData.hasChildren(['name', 'date', 'emoji', 'summary', 'transcript'])",
           "name": { ".validate": "newData.isString()" },
           "date": { ".validate": "newData.isString()" },

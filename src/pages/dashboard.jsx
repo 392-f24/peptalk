@@ -4,9 +4,10 @@ import Calendar from '../components/calendar';
 import EntryCard from '../components/entryCard';
 import ToolBar from '../components/toolbar';
 import { useNavigate } from 'react-router-dom';
+import { firebaseJournalService } from '../utilities/EntryFirebaseHelper';
 
 const Dashboard = () => {
-  const { userEntries = [], loading, error, deleteEntry } = usePepContext();
+  const { user,userEntries = [], loading, error, deleteEntry } = usePepContext();
   const navigate = useNavigate();
   
   const [selectedDate, setSelectedDate] = useState('');
@@ -40,15 +41,27 @@ const Dashboard = () => {
     // Implement recap viewing logic using context
   }, []);
 
-  const handleDeleteEntry = async (entryId) => {
-    if (!deleteEntry) return;
+
+  const handleDeleteEntry = async (entry) => {
+    if (!entry || !user) return;
     
     try {
-      await deleteEntry(entryId);
+      await firebaseJournalService.deleteEntry(user.uid, entry);
+      navigate('/');
     } catch (error) {
       console.error('Error deleting entry:', error);
     }
-  };
+  };  
+
+  // const handleDeleteEntry = async (entryId) => {
+  //   if (!deleteEntry) return;
+    
+  //   try {
+  //     await deleteEntry(entryId);
+  //   } catch (error) {
+  //     console.error('Error deleting entry:', error);
+  //   }
+  // };
 
   // Filtered and searched entries
   const filteredEntries = useMemo(() => {
