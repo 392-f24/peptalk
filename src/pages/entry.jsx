@@ -4,6 +4,7 @@ import { Mic, MicOff, Loader, CheckCircle, X } from 'lucide-react';
 import OpenAI from 'openai';
 import { getDatabase, ref, push, set } from "firebase/database";
 import firebase from "../firebase";
+import { usePepContext } from '../utilities/context';
 
 const Entry = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Entry = () => {
   const audioContextRef = useRef(null);
   const audioChunksRef = useRef([]);
   const db = getDatabase(firebase);
+  const { user } = usePepContext();
   
   const emotions = ["😊", "😔", "😡", "😌", "🥰", "😤", "😢"];
 
@@ -220,19 +222,20 @@ const Entry = () => {
   };
 
   const handleSave = async () => {
+    
     try {
       if (!title || !selectedEmotion) {
         setError('Please fill in all required fields');
         return;
       }
-  
+
+      console.log({user});
       // Get the user ID from localStorage or your store
-      const userId = localStorage.getItem("userId");
-      if (!userId) {
+      if (!user) {
         setError('User not authenticated');
         return;
       }
-  
+
       // Compile entry content from conversation
       const transcriptContent = conversation
         .filter(msg => msg.role === 'user')
@@ -245,7 +248,7 @@ const Entry = () => {
         .slice(-1)[0]?.content || 'No summary available';
   
       // Create entry reference with auto-generated ID
-      const entriesRef = ref(db, `${userId}/entries`);
+      const entriesRef = ref(db, `${user.uid}/entries`);
       const newEntryRef = push(entriesRef);
   
       // Create entry data
