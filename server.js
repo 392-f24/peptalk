@@ -1,156 +1,188 @@
-import express from 'express';
-import { WebSocketServer } from 'ws';
-import { createServer } from 'http';
-import WebSocket from 'ws';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-if (!OPENAI_API_KEY) {
-  console.error('OPENAI_API_KEY is not defined in environment variables');
-  process.exit(1);
-}
+// server.js
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
 
 const app = express();
-const server = createServer(app);
-const wss = new WebSocketServer({ server });
 
-const connections = new Map();
+// Middleware
+app.use(cors({
+  origin: 'http://localhost:5173', // Your Vite frontend URL
+  credentials: true
+}));
+app.use(express.json());
 
-const createOpenAIWebSocket = (clientWs) => {
-  console.log('Creating OpenAI WebSocket connection...');
-  
-  const ws = new WebSocket("wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01", {
-    headers: {
-      "Authorization": `Bearer ${OPENAI_API_KEY}`,
-      "OpenAI-Beta": "realtime=v1",
-    },
-  });
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/peptalk')
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
-  let sessionInitialized = false;
-  let audioBuffer = [];
-
-  ws.on('open', () => {
-    console.log('Connected to OpenAI');
-    // Updated session config with server_vad
-    ws.send(JSON.stringify({
-      type: "session.update",
-      session: {
-        modalities: ["text", "audio"],
-        turn_detection: {
-          type: "server_vad"  // Changed to server_vad as required
-        },
-        voice: "alloy",
-        instructions: "You are a supportive journaling companion. Help users reflect on their thoughts and feelings with empathy and insight."
-      }
-    }));
-  });
-
-  ws.on('message', (data) => {
-    try {
-      const message = JSON.parse(data.toString());
-      console.log('Received from OpenAI:', message.type);
-
-      if (message.type === 'error') {
-        console.error('OpenAI Error:', JSON.stringify(message, null, 2));
-        return;
-      }
-
-      if (message.type === 'session.created') {
-        sessionInitialized = true;
-        console.log('Session initialized');
-      }
-
-      // Forward message to client
-      if (clientWs.readyState === WebSocket.OPEN) {
-        clientWs.send(data);
-      }
-    } catch (error) {
-      console.error('Error processing OpenAI message:', error);
-    }
-  });
-
-  const handleClientMessage = async (message) => {
-    try {
-      const data = JSON.parse(message);
-      console.log('Handling client message:', data.type);
-
-      switch (data.type) {
-        case 'start_recording':
-          console.log('Starting new recording session');
-          audioBuffer = [];
-          break;
-
-        case 'input_audio_buffer.append':
-          audioBuffer.push(data.audio);
-          ws.send(message);
-          break;
-
-        case 'response.pause':
-          console.log('Pausing response');
-          ws.send(JSON.stringify({ type: 'response.pause' }));
-          break;
-
-        case 'response.resume':
-          console.log('Resuming response');
-          ws.send(JSON.stringify({ type: 'response.resume' }));
-          break;
-
-        case 'stop_recording':
-          console.log('Stopping recording');
-          if (audioBuffer.length > 0) {
-            console.log('Committing final audio buffer');
-            ws.send(JSON.stringify({
-              type: 'input_audio_buffer.commit'
-            }));
-            audioBuffer = [];
-          }
-          break;
-
-        default:
-          ws.send(message);
-      }
-    } catch (error) {
-      console.error('Error handling client message:', error);
-    }
-  };
-
-  ws.on('error', (error) => {
-    console.error('WebSocket error:', error);
-    if (clientWs.readyState === WebSocket.OPEN) {
-      clientWs.send(JSON.stringify({
-        type: 'error',
-        message: 'WebSocket error occurred'
-      }));
-    }
-  });
-
-  return { ws, handleClientMessage };
-};
-
-wss.on('connection', (clientWs) => {
-  console.log('Client connected');
-
-  const { ws: openAIWs, handleClientMessage } = createOpenAIWebSocket(clientWs);
-  connections.set(clientWs, openAIWs);
-
-  clientWs.on('message', async (message) => {
-    console.log('Received client message');
-    await handleClientMessage(message);
-  });
-
-  clientWs.on('close', () => {
-    console.log('Client disconnected');
-    const openAIWs = connections.get(clientWs);
-    if (openAIWs) {
-      openAIWs.close();
-      connections.delete(clientWs);
-    }
-  });
+// MongoDB Schemas
+const entrySchema = new mongoose.Schema({
+  userId: String,
+  name: String,
+  date: Date,
+  emoji: String,
+  summary: String,
+  transcript: String
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+const recapSchema = new mongoose.Schema({
+  userId: String,
+  recapName: String,
+  month: Date,
+  moodSummary: Object,
+  summary: String,
+  favoriteDay: {
+    date: Date,
+    description: String
+  },
+  totalEntries: Number
+});
+
+const Entry = mongoose.model('Entry', entrySchema);
+const Recap = mongoose.model('Recap', recapSchema);
+
+// Routes
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { userId, name } = req.body;
+    // In a real app, you'd want to store user data
+    res.status(200).json({ message: 'User authenticated', userId, name });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Entry routes
+app.get('/api/entry/entry-data', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const entries = await Entry.find({ userId });
+    res.json({ entries });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/entry/create-entry', async (req, res) => {
+  try {
+    const { userId, name, date, emoji, summary, transcript } = req.body;
+    const newEntry = new Entry({
+      userId,
+      name,
+      date,
+      emoji,
+      summary,
+      transcript
+    });
+    await newEntry.save();
+    res.status(201).json({ newEntry });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.put('/api/entry/update-entry', async (req, res) => {
+  try {
+    const { userId, entryId, updatedTranscript } = req.body;
+    const entry = await Entry.findOneAndUpdate(
+      { _id: entryId, userId },
+      { transcript: updatedTranscript },
+      { new: true }
+    );
+    res.json({ entry });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete('/api/entry/delete-entry', async (req, res) => {
+  try {
+    const { userId, entryId } = req.query;
+    await Entry.findOneAndDelete({ _id: entryId, userId });
+    res.json({ message: 'Entry deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Recap routes
+app.get('/api/recap/recap-data', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const recaps = await Recap.find({ userId });
+    res.json({ recaps });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/recap/create-recap', async (req, res) => {
+  try {
+    const { userId, recapName, month, moodSummary, summary, favoriteDay, totalEntries } = req.body;
+    const newRecap = new Recap({
+      userId,
+      recapName,
+      month,
+      moodSummary,
+      summary,
+      favoriteDay,
+      totalEntries
+    });
+    await newRecap.save();
+    res.status(201).json({ newRecap });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete('/api/recap/delete-recap', async (req, res) => {
+  try {
+    const { userId, recapId } = req.query;
+    await Recap.findOneAndDelete({ _id: recapId, userId });
+    res.json({ message: 'Recap deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Generate recap endpoint (using mock data for now)
+app.post('/api/recap/generate-recap', async (req, res) => {
+  try {
+    const { monthEntries, recapMonth } = req.body;
+    
+    // Mock recap generation (in a real app, this would use OpenAI or similar)
+    const recap = {
+      recapName: `Recap for ${new Date(recapMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}`,
+      month: recapMonth,
+      moodSummary: {
+        "😊": 5,
+        "😔": 2,
+        "😡": 1
+      },
+      summary: "This month showed overall positive emotions with some challenges.",
+      favoriteDay: {
+        date: new Date(),
+        description: "Had a particularly good day with multiple achievements."
+      },
+      totalEntries: monthEntries.length
+    };
+    
+    res.json({ recap });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'healthy' });
+});
+
+const PORT = process.env.PORT || 3007;
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

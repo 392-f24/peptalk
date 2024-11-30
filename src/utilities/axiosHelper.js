@@ -5,34 +5,33 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Add timeout and error handling
-  timeout: 5000,
-  withCredentials: true
+  withCredentials: true // Add this if using cookies
 });
 
-// Add response interceptor for better error handling
-axiosInstance.interceptors.response.use(
-  response => response,
-  error => {
-    console.error('API Error:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data
-    });
+// Add interceptors for better error handling
+axiosInstance.interceptors.request.use(
+  (config) => {
+    console.log('Request:', config.method.toUpperCase(), config.url);
+    return config;
+  },
+  (error) => {
+    console.error('Request Error:', error);
     return Promise.reject(error);
   }
 );
 
-// Add request interceptor to log requests in development
-if (import.meta.env.DEV) {
-  axiosInstance.interceptors.request.use(request => {
-    console.log('API Request:', {
-      url: request.url,
-      method: request.method,
-      data: request.data
-    });
-    return request;
-  });
-}
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    console.error('Response Error:', error.message);
+    if (error.response) {
+      console.error('Response Data:', error.response.data);
+      console.error('Response Status:', error.response.status);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default axiosInstance;

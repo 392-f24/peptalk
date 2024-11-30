@@ -103,7 +103,7 @@ const Entry = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
-          sampleRate: 16000, // Changed to 16kHz for better compatibility
+          sampleRate: 16000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
@@ -164,7 +164,7 @@ const Entry = () => {
 
       if (response.text) {
         const completion = await openai.chat.completions.create({
-          model: "gpt-4", // Fixed model name typo
+          model: "gpt-4o", 
           messages: [
             { 
               role: "system", 

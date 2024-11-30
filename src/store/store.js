@@ -46,15 +46,24 @@ const useStore = create((set, get) => ({
   fetchEntries: async () => {
     try {
       const userId = get().userId;
+      if (!userId) {
+        console.warn('No userId available for fetchEntries');
+        return;
+      }
+      console.log('Fetching entries for userId:', userId);
       const response = await axiosInstance.get("/entry/entry-data", {
         params: { userId },
       });
       set({ entries: response.data.entries });
     } catch (error) {
       console.error(
-        "Error fetching entries:",
-        error.response?.data || error.message
+        'Error fetching entries:',
+        error.response?.data || error.message,
+        '\nFull error:',
+        error
       );
+      // Optionally set an error state
+      set({ entriesError: error.message });
     }
   },
 
@@ -201,4 +210,6 @@ const useStore = create((set, get) => ({
   },
 }));
 
+
 export default useStore;
+
