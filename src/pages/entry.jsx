@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mic, MicOff, Loader, CheckCircle, X } from 'lucide-react';
 import OpenAI from 'openai';
+import { getDatabase, ref, push, set } from "firebase/database";
+import { app } from "../firebase";
 
 const Entry = () => {
   const navigate = useNavigate();
@@ -15,6 +17,7 @@ const Entry = () => {
   const mediaRecorderRef = useRef(null);
   const audioContextRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const db = getDatabase(app);
   
   const emotions = ["😊", "😔", "😡", "😌", "🥰", "😤", "😢"];
 
@@ -218,21 +221,46 @@ const Entry = () => {
 
   const handleSave = async () => {
     try {
-      const entryContent = conversation
+      if (!title || !selectedEmotion) {
+        setError('Please fill in all required fields');
+        return;
+      }
+  
+      // Get the user ID from localStorage or your store
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        setError('User not authenticated');
+        return;
+      }
+  
+      // Compile entry content from conversation
+      const transcriptContent = conversation
         .filter(msg => msg.role === 'user')
         .map(msg => msg.content)
         .join('\n');
-
-      const newEntry = {
-        title: title || 'Untitled Entry',
-        date: new Date().toISOString(),
-        content: entryContent,
-        emotion: selectedEmotion,
+  
+      // Get summary from the last AI response if available
+      const summaryContent = conversation
+        .filter(msg => msg.role === 'assistant')
+        .slice(-1)[0]?.content || 'No summary available';
+  
+      // Create entry reference with auto-generated ID
+      const entriesRef = ref(db, `${userId}/entries`);
+      const newEntryRef = push(entriesRef);
+  
+      // Create entry data
+      const entryData = {
+        name: title,
+        date: new Date().toISOString().split('T')[0], // Format: YYYY-MM-DD
+        emoji: selectedEmotion,
+        summary: summaryContent,
+        transcript: transcriptContent
       };
-
-      console.log('Saving entry:', newEntry);
-      // Add your API call here to save the entry
-      navigate('/');
+  
+      // Save to Firebase
+      await set(newEntryRef, entryData);
+      console.log('Entry saved successfully');
+      navigate('/dashboard');
     } catch (error) {
       console.error('Error saving entry:', error);
       setError('Error saving entry: ' + error.message);
