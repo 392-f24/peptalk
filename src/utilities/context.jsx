@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { ref, get, getDatabase } from 'firebase/database';
-import { firebase } from '../firebase';
+import firebase from '../firebase';
 import {
   handleGoogleLogin,
   signOut,

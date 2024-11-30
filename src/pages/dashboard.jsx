@@ -3,9 +3,11 @@ import { usePepContext } from '../utilities/context';
 import Calendar from '../components/calendar';
 import EntryCard from '../components/entryCard';
 import ToolBar from '../components/toolbar';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const { userEntries = [], loading, error, deleteEntry } = usePepContext();
+  const navigate = useNavigate();
   
   const [selectedDate, setSelectedDate] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -14,7 +16,6 @@ const Dashboard = () => {
   // New state for search and filter
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmotion, setSelectedEmotion] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleDateChange = useCallback((type, date) => {
     if (type === 'month') {
@@ -71,7 +72,7 @@ const Dashboard = () => {
   }, [userEntries, searchTerm, selectedEmotion, selectedDate]);
 
   const handleCreateNewEntry = () => {
-    // setIsModalOpen(true);
+    navigate('/entry')
   };
 
   if (loading) {
@@ -133,12 +134,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          {/* Modal content for creating a new entry */}
-        </div>
-      )}
     </div>
   );
 };

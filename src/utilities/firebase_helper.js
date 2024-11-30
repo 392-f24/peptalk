@@ -7,7 +7,7 @@ import {
   signOut,
 } from "firebase/auth";
 import { getDatabase, get, ref, set } from "firebase/database";
-import { firebase } from "../firebase";
+import firebase from "../firebase";
 
 console.log("Firebase helper initializing..."); 
 const auth = getAuth(firebase);

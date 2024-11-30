@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Mic, MicOff, Loader, CheckCircle, X } from 'lucide-react';
 import OpenAI from 'openai';
 import { getDatabase, ref, push, set } from "firebase/database";
-import { firebase } from "../firebase";
+import firebase from "../firebase";
 
 const Entry = () => {
   const navigate = useNavigate();
