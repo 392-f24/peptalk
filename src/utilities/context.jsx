@@ -88,6 +88,25 @@ export function PepProvider({ children }) {
     }
   };
 
+  const fetchEntries = async () => {
+    if (!user) return;
+    try {
+      const entriesRef = ref(db, `${user.uid}/entries`);
+      const snapshot = await get(entriesRef);
+      if (snapshot.exists()) {
+        const entriesArray = Object.entries(snapshot.val())
+          .map(([id, entry]) => ({
+            id,
+            ...entry
+          }))
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+        setUserEntries(entriesArray);
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const value = {
     user,
     userProfile,
@@ -96,6 +115,7 @@ export function PepProvider({ children }) {
     error,
     login,
     logout,
+    fetchEntries,
   };
 
   return (
