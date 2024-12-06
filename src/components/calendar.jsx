@@ -75,10 +75,10 @@ const Calendar = ({
   const calendarDays = generateCalendarDays();
 
   return (
-    <div className="w-full bg-white rounded-lg p-4 shadow-sm">
+    <div className="w-full bg-white rounded-lg p-4 shadow-sm border border-gray-200">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium text-gray-700">
-          Emotional Journey
+          My Calendar
         </h2>
         <div className="flex items-center gap-2">
           <button
