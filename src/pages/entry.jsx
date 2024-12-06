@@ -244,7 +244,7 @@ const Entry = () => {
         messages: [
           {
             role: "system",
-            content: "Generate a concise but comprehensive summary (2-3 sentences) of this journal entry. Focus on key emotions, main topics discussed, and any important insights or conclusions reached."
+            content: "Write a personal journal summary (2-3 sentences) from the first-person perspective. Capture the emotional tone of the conversation, describe key moments or realizations, and maintain an authentic, reflective voice. The summary should feel like it was written by the journal keeper themselves, incorporating their chosen emotion and speaking directly from their experience."
           },
           {
             role: "user",
@@ -284,7 +284,7 @@ const Entry = () => {
       setError('Error saving entry: ' + error.message);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-2xl mx-auto space-y-6">
