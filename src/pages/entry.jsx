@@ -222,30 +222,44 @@ const Entry = () => {
   };
 
   const handleSave = async () => {
-    
     try {
       if (!title || !selectedEmotion) {
         setError('Please fill in all required fields');
         return;
       }
-
-      console.log({user});
-      // Get the user ID from localStorage or your store
+  
       if (!user) {
         setError('User not authenticated');
         return;
       }
-
-      // Compile entry content from conversation
+  
+      // Compile full conversation history in a structured format
+      const conversationHistory = conversation.map(msg => 
+        `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+      ).join('\n');
+  
+      // Generate a comprehensive summary using GPT-4
+      const summaryCompletion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: "Generate a concise but comprehensive summary (2-3 sentences) of this journal entry. Focus on key emotions, main topics discussed, and any important insights or conclusions reached."
+          },
+          {
+            role: "user",
+            content: `Title: ${title}\nEmotion: ${selectedEmotion}\n\nConversation:\n${conversationHistory}`
+          }
+        ],
+      });
+  
+      const summaryContent = summaryCompletion.choices[0].message.content;
+  
+      // Compile entry content from user messages only
       const transcriptContent = conversation
         .filter(msg => msg.role === 'user')
         .map(msg => msg.content)
         .join('\n');
-  
-      // Get summary from the last AI response if available
-      const summaryContent = conversation
-        .filter(msg => msg.role === 'assistant')
-        .slice(-1)[0]?.content || 'No summary available';
   
       // Create entry reference with auto-generated ID
       const entriesRef = ref(db, `${user.uid}/entries`);
@@ -254,10 +268,11 @@ const Entry = () => {
       // Create entry data
       const entryData = {
         name: title,
-        date: new Date().toISOString().split('T')[0], // Format: YYYY-MM-DD
+        date: new Date().toISOString().split('T')[0],
         emoji: selectedEmotion,
         summary: summaryContent,
-        transcript: transcriptContent
+        transcript: transcriptContent,
+        fullConversation: conversationHistory // Optional: store full conversation if needed
       };
   
       // Save to Firebase
@@ -269,7 +284,7 @@ const Entry = () => {
       setError('Error saving entry: ' + error.message);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-2xl mx-auto space-y-6">
