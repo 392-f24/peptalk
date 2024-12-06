@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { X, Edit2, Check, XCircle } from 'lucide-react';
+import { X, Edit2, Check, XCircle, Trash2 } from 'lucide-react';
 import { firebaseJournalService } from '../utilities/EntryFirebaseHelper';
 import { usePepContext } from '../utilities/context';
 
@@ -136,7 +136,7 @@ const JournalEntryPage = () => {
                 onClick={handleDelete}
                 className="p-2 text-red-500 hover:bg-red-50 rounded-full"
               >
-                <XCircle size={20} />
+                <Trash2 size={20} />
               </button>
               <button 
                 onClick={() => navigate('/')}

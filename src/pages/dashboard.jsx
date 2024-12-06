@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { usePepContext } from '../utilities/context';
 import Calendar from '../components/calendar';
 import EntryCard from '../components/entryCard';
@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { firebaseJournalService } from '../utilities/EntryFirebaseHelper';
 
 const Dashboard = () => {
-  const { user,userEntries = [], loading, error, deleteEntry } = usePepContext();
+  const { user,userEntries = [], loading, error, deleteEntry, fetchEntries } = usePepContext();
   const navigate = useNavigate();
   
   const [selectedDate, setSelectedDate] = useState('');
@@ -17,6 +17,11 @@ const Dashboard = () => {
   // New state for search and filter
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmotion, setSelectedEmotion] = useState('');
+  useEffect(() => {
+    if (user) {
+      fetchEntries();
+    }
+  }, [user]);
 
   const handleDateChange = useCallback((type, date) => {
     if (type === 'month') {
