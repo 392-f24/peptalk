@@ -10,6 +10,16 @@ const EntryCard = ({ entry }) => {
     }
     navigate(`/entry/${entry.id}`);
   };
+  
+  const formatDate = (dateString) => { 
+
+    const cstOffset = 6 * 60 * 60 * 1000;
+     
+    const date = new Date(new Date(dateString).getTime() + cstOffset);
+    
+    return date.toLocaleDateString('en-US', { 
+    }); 
+  };
 
   return (
     <div 
@@ -26,7 +36,7 @@ const EntryCard = ({ entry }) => {
           </div>
         </div>
         <span className="text-sm text-gray-500">
-          {new Date(entry.date).toLocaleDateString()}
+          {formatDate(entry.date)}
         </span>
       </div>
       <p className="text-sm text-gray-600 line-clamp-2">

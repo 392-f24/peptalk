@@ -52,11 +52,11 @@ const Calendar = ({
       const dayEntries = entries.filter((entry) => {
         const entryDate = new Date(entry.date);
         return (
-          entryDate.getDate() === day &&
+          entryDate.getDate() === day-1 &&
           entryDate.getMonth() === currentDate.getMonth() &&
           entryDate.getFullYear() === currentDate.getFullYear()
         );
-      });
+      }); 
 
       const earliestEmoji = dayEntries.length > 0 ? dayEntries[0].emoji : null;
 
@@ -66,8 +66,7 @@ const Calendar = ({
         emoji: earliestEmoji,
         entryCount: dayEntries.length
       });
-    }
-
+    } 
     return days;
   };
 
@@ -126,11 +125,11 @@ const Calendar = ({
                 <div className="text-xs text-gray-600">{day.day}</div>
                 <div className="mb-1">
                   {day.emoji || ""}
-                  {day.entryCount > 1 && (
+                  {/* {day.entryCount > 1 && (
                     <span className="text-xs text-gray-500 ml-1">
                       +{day.entryCount - 1}
                     </span>
-                  )}
+                  )} */}
                 </div>
               </div>
             )}

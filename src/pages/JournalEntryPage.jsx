@@ -47,13 +47,18 @@ const JournalEntryPage = () => {
     }
   }, [id, user, navigate, authLoading]);
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  const formatDate = (dateString) => { 
+
+    const cstOffset = 6 * 60 * 60 * 1000;
+     
+    const date = new Date(new Date(dateString).getTime() + cstOffset);
+    
+    return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    }); 
   };
 
   const handleEditClick = () => {
