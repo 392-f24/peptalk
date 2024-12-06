@@ -3,21 +3,33 @@ import { usePepContext } from '../utilities/context';
 import Calendar from '../components/calendar';
 import EntryCard from '../components/entryCard';
 import ToolBar from '../components/toolbar';
+import RecapModal from './recapModal';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { user, userEntries = [], loading, error, fetchEntries } = usePepContext();
+  const { user, 
+    userEntries = [], 
+    loading, 
+    error, 
+    fetchEntries, 
+    recaps, 
+    createRecap, 
+    fetchRecaps, 
+    deleteRecap 
+  } = usePepContext();
   const navigate = useNavigate();
   
   const [selectedDate, setSelectedDate] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [isCreatingRecap, setIsCreatingRecap] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmotion, setSelectedEmotion] = useState('');
+  const [isRecapModalOpen, setIsRecapModalOpen] = useState(false)
+  const [isCreatingRecap, setIsCreatingRecap] = useState(false);
   
   useEffect(() => {
     if (user) {
       fetchEntries();
+      fetchRecaps();
     }
   }, [user]);
 
@@ -30,19 +42,28 @@ const Dashboard = () => {
   }, []);
 
   const handleCreateRecap = async () => {
-    setIsCreatingRecap(true);
+    setIsCreatingRecap(true)
     try {
-      // Implement recap creation logic using context
-    } catch (error) {
-      console.error('Error creating recap:', error);
-    } finally {
-      setIsCreatingRecap(false);
-    }
-  };
+      const currentMonthEntries = userEntries.filter(entry => {
+        const entryDate = new Date(entry.date)
+        return (
+          entryDate.getMonth() === currentDate.getMonth() &&
+          entryDate.getFullYear() === currentDate.getFullYear()
+        )
+      })
 
-  const handleViewRecap = useCallback(() => {
-    // Implement recap viewing logic using context
-  }, []);
+      const recapMonth = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })
+      await createRecap(currentMonthEntries, recapMonth)
+    } catch (error) {
+      console.error('Error creating recap:', error)
+    } finally {
+      setIsCreatingRecap(false)
+    }
+  }
+
+  const handleViewRecap = () => {
+    setIsRecapModalOpen(true)
+  }
 
   const filteredEntries = useMemo(() => {
     if (!Array.isArray(userEntries)) return [];
@@ -93,7 +114,16 @@ const Dashboard = () => {
             onCreateNewEntry={handleCreateNewEntry}
           />
         </div>
-
+        <RecapModal
+        isOpen={isRecapModalOpen}
+        onClose={() => setIsRecapModalOpen(false)}
+        selectedMonth={currentDate}
+        recaps={recaps}
+        onDeleteRecap={async () => {
+          await deleteRecap()
+          setIsRecapModalOpen(false)
+        }}
+      />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1">
             <div className="space-y-4">
