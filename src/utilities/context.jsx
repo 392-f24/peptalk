@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { ref, get, getDatabase } from 'firebase/database';
+import { ref, set, get, getDatabase } from 'firebase/database';
 import firebase from '../firebase';
+import axios from 'axios';
 import {
   handleGoogleLogin,
   signOut,
@@ -20,6 +21,7 @@ export function PepProvider({ children }) {
   const [userEntries, setUserEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [recaps, setRecaps] = useState([])
   
   const db = getDatabase(firebase);
 
@@ -149,7 +151,8 @@ export function PepProvider({ children }) {
       if (!userId) throw new Error("User not authenticated")
     
       console.log("Generating recap...")
-      const apiKey = "" 
+      const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+      console.log(apiKey)
       const response = await axios.post(
         "https://api.openai.com/v1/chat/completions",
         {
@@ -226,6 +229,7 @@ export function PepProvider({ children }) {
     login,
     logout,
     fetchEntries,
+    recaps, 
     deleteRecap, 
     fetchRecaps, 
     createRecap

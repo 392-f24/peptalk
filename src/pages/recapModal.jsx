@@ -1,7 +1,7 @@
-import React from 'react';
+import React from 'react'
 
 const MoodSummaryBar = ({ emoji, count, maxCount }) => {
-  const percentage = (count / maxCount) * 100;
+  const percentage = (count / maxCount) * 100
   return (
     <div className="flex items-center gap-2 mb-2">
       <div className="w-8 text-center text-lg">{emoji}</div>
@@ -15,33 +15,42 @@ const MoodSummaryBar = ({ emoji, count, maxCount }) => {
       </div>
       <div className="w-8 text-sm font-medium text-gray-600">{count}</div>
     </div>
-  );
-};
+  )
+}
 
 const RecapModal = ({ 
   isOpen, 
   onClose, 
-  selectedMonthRecap, 
+  selectedMonth, 
+  recaps, 
   onDeleteRecap 
 }) => {
-  if (!isOpen) return null;
+  if (!isOpen) return null
+
+  const selectedMonthRecap = recaps.find(recap => {
+    const recapDate = new Date(recap.month)
+    return (
+      recapDate.getMonth() === selectedMonth.getMonth() &&
+      recapDate.getFullYear() === selectedMonth.getFullYear()
+    )
+  })
 
   const formatMoodSummary = (moodSummary) => {
-    if (!moodSummary || typeof moodSummary !== 'object') return [];
+    if (!moodSummary || typeof moodSummary !== 'object') return []
     
-    const entries = Object.entries(moodSummary);
-    const maxCount = Math.max(...entries.map(([_, count]) => count));
+    const entries = Object.entries(moodSummary)
+    const maxCount = Math.max(...entries.map(([_, count]) => count))
     
-    return entries.sort((a, b) => b[1] - a[1])  // Sort by count in descending order
+    return entries.sort((a, b) => b[1] - a[1]) // Sort by count in descending order
       .map(([emoji, count]) => ({
         emoji,
         count,
         maxCount
-      }));
-  };
+      }))
+  }
 
   return (
-    <div className="fixed inset-0 bg-gray-900/75 flex justify-center items-center p-8">
+    <div className="fixed inset-0 bg-gray-900/75 flex justify-center items-center p-8 z-50">
       <div className="bg-white rounded-xl p-8 max-w-screen-md h-[90vh] overflow-y-scroll shadow-2xl relative animate-fadeIn">
         {/* Close Button */}
         <button
@@ -55,7 +64,7 @@ const RecapModal = ({
         </button>
 
         {selectedMonthRecap ? (
-          <div className="space-y-6 ">
+          <div className="space-y-6">
             <div className="text-center pb-4 border-b border-gray-100">
               <h3 className="text-2xl font-bold text-gray-800">{selectedMonthRecap.recapName}</h3>
             </div>
@@ -64,7 +73,7 @@ const RecapModal = ({
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="text-sm font-semibold text-gray-600 mb-4">MOOD DISTRIBUTION</h4>
                 <div className="space-y-2">
-                  {formatMoodSummary(selectedMonthRecap.moodSummary).map((mood) => (
+                  {formatMoodSummary(selectedMonthRecap.mood).map((mood) => (
                     <MoodSummaryBar 
                       key={mood.emoji}
                       emoji={mood.emoji}
@@ -85,14 +94,14 @@ const RecapModal = ({
                   <div className="flex flex-row justify-between">
                     <h4 className="text-sm font-semibold text-green-600 mb-1">Best Day</h4>
                     <p className="text-sm font-medium text-green-600">
-                        {new Date(selectedMonthRecap.favoriteDay.date).toLocaleDateString()}
+                    {selectedMonthRecap.favoriteDay && new Date(selectedMonthRecap.favoriteDay.date).toLocaleDateString()}
                     </p>
-                </div>
+                  </div>
                   <div className="pt-2">
                     <p className="text-sm text-green-900">
-                    {selectedMonthRecap.favoriteDay.description}
+                      {selectedMonthRecap.favoriteDay.desc}
                     </p>
-                </div>
+                  </div>
                 </div>
               </div>
 
@@ -102,14 +111,13 @@ const RecapModal = ({
                   {selectedMonthRecap.summary}
                 </p>
               </div>
-
             </div>
 
             <div className="pt-4">
               <button
                 onClick={async () => {
-                  await onDeleteRecap(selectedMonthRecap._id);
-                  onClose();
+                  await onDeleteRecap()
+                  onClose()
                 }}
                 className="w-full px-4 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors duration-200 font-medium"
               >
@@ -132,7 +140,7 @@ const RecapModal = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default RecapModal;
+export default RecapModal
