@@ -99,7 +99,7 @@ const Dashboard = () => {
             <div className="space-y-4">
               <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-1 h-12 bg-teal-500 rounded-full"></div>
+                  <div className="w-1 h-12 bg-blue-500 rounded-full"></div>
                   <div>
                     <p className="text-slate-400 text-sm mb-1">Thought of the day</p>
                     <p className="text-slate-600 italic">

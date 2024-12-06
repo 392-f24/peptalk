@@ -14,7 +14,7 @@ const EntryCard = ({ entry }) => {
   return (
     <div 
       onClick={handleClick} 
-      className="bg-white rounded-lg p-6 shadow-sm hover:border-gray-200 cursor-pointer transition-shadow relative border border-gray-100"
+      className="bg-white rounded-lg p-6 shadow-sm hover:border-blue-500 cursor-pointer transition-shadow relative border border-gray-200"
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1">

@@ -138,22 +138,24 @@ const Calendar = ({
         ))}
       </div>
 
-      <button
-        onClick={onCreateRecap}
-        disabled={isCreatingRecap}
-        className={`w-full mt-4 px-4 py-2 text-sm rounded transition ${
-          isCreatingRecap ? "bg-gray-400 text-gray-700" : "bg-blue-500 text-white hover:bg-blue-600"
-        }`}
-      >
-        {isCreatingRecap ? 'Creating Recap...' : 'Create Monthly Recap'}
-      </button>
+      <div className='flex flex-row mt-3 gap-2'>
+        <button
+          onClick={onCreateRecap}
+          disabled={isCreatingRecap}
+          className={`w-full mt-2 px-4 py-2 text-sm rounded-lg ${
+            isCreatingRecap ? "bg-gray-400 text-gray-700" : "bg-blue-500 text-white hover:bg-blue-600"
+          }`}
+        >
+          {isCreatingRecap ? 'Creating Recap...' : 'Create Recap'}
+        </button>
 
-      <button
-        onClick={onViewRecap}
-        className="w-full mt-2 px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition"
-      >
-        View Recap
-      </button>
+        <button
+          onClick={onViewRecap}
+          className="w-full mt-2 px-4 py-2 text-sm border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-500 hover:text-white transition"
+        >
+          View Recap
+        </button>
+      </div>
     </div>
   );
 };
