@@ -126,6 +126,7 @@ export function PepProvider({ children }) {
             mood: recapData.mood
           }
         ]
+ 
         setRecaps(recapArray)
       }
     } catch (err) {
@@ -210,8 +211,10 @@ export function PepProvider({ children }) {
     
       const recapsRef = ref(db, `${userId}/recap`)
       await set(recapsRef, recapData)
-    
+        
+ 
       setRecaps((prevRecaps) => [...prevRecaps, recapData])
+      console.log(recapData)
       console.log("Recap created successfully:", recapData)
     } catch (error) {
       console.error("Error creating recap:", error.message)
